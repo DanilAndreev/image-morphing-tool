@@ -17,9 +17,17 @@
 #ifndef IMAGE_MORPHING_TOOL_STROKEMANAGER_H
 #define IMAGE_MORPHING_TOOL_STROKEMANAGER_H
 
+#include "Stroke.h"
 
 class StrokeManager {
-
+protected:
+    mutable Stroke *stroke = nullptr;
+    std::size_t targetSize = 0;
+public:
+    void bind(Stroke* target) noexcept;
+    void unbind() noexcept;
+public:
+    const StrokeManager& rebuild() const;
 };
 
 

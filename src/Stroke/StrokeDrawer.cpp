@@ -31,12 +31,17 @@ void StrokeDrawer::unbind() noexcept {
 }
 
 void StrokeDrawer::draw(QPainter &painter) {
+    if (!this->stroke)
+        throw Exceptions::NullPointerException{
+                "You have to use 'bind()' method before executing context based operations."};
+    QPen oldPen = painter.pen();
     painter.setPen(this->pen);
     for (std::size_t i = 1; i < this->stroke->size(); i++) {
         StrokeDrawer::drawLine(painter, this->stroke->at(i - 1), this->stroke->at(i));
     }
+    painter.setPen(oldPen);
 }
 
-void StrokeDrawer::drawLine(QPainter &painter, const QPoint &a, const QPoint& b) {
+void StrokeDrawer::drawLine(QPainter &painter, const QPoint &a, const QPoint &b) {
     painter.drawLine(a.x(), a.y(), b.x(), b.y());
 }

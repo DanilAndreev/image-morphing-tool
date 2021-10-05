@@ -20,6 +20,7 @@
 #include <QPainter>
 
 #include "Stroke.h"
+#include "../exceptions/NullPointerException.h"
 
 class StrokeDrawer {
 protected:
@@ -33,6 +34,9 @@ public:
     void bind(const Stroke *target) noexcept;
     void unbind() noexcept;
 public:
+    /**
+     * @throw Exceptions::NullPointerException
+     */
     void draw(QPainter& painter);
 private:
     inline static void drawLine(QPainter& painter, const QPoint& a, const QPoint& b);

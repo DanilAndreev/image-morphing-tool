@@ -14,14 +14,26 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
+#include <exception>
+#include <iostream>
+
 #include <QApplication>
 #include <QDebug>
+
 #include "Viewport/Viewport.h"
 
 int main(int argc, char *argv[]) {
-    QApplication a(argc, argv);
-    Viewport viewport{};
-    viewport.resize(800, 600);
-    viewport.show();
-    return QApplication::exec();
+    try {
+        QApplication a(argc, argv);
+        Viewport viewport{};
+        viewport.resize(800, 600);
+        viewport.show();
+        return QApplication::exec();
+    } catch (const std::exception& error) {
+        std::cerr << "Error: " << error.what() << std::endl;
+        exit(-1);
+    } catch (...) {
+        std::cerr << "Fatal error: Unexpected exception." << std::endl;
+        exit(-1);
+    }
 }

@@ -14,11 +14,13 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
+#include <exceptions/NullPointerException.h>
 #include "Viewport/Viewport.h"
 
 #include "Stroke/StrokeDrawer.h"
 
 Viewport::Viewport(QWidget *parent) : QWidget(parent) {
+
 }
 
 void Viewport::drawLines(QPainter &painter) {
