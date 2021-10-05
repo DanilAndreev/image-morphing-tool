@@ -13,6 +13,8 @@ class Viewport : public QWidget {
 protected:
     std::list<Stroke> strokes;
     std::list<QPoint> currentStroke;
+private:
+    bool isDrawing = false;
 public:
     explicit Viewport(QWidget *parent = nullptr);
     Viewport(const Viewport &reference) = delete;
