@@ -14,14 +14,13 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
-#include <QApplication>
-#include <QDebug>
-#include "Viewport/Viewport.h"
+#ifndef IMAGE_MORPHING_TOOL_STROKEMANAGER_H
+#define IMAGE_MORPHING_TOOL_STROKEMANAGER_H
 
-int main(int argc, char *argv[]) {
-    QApplication a(argc, argv);
-    Viewport viewport{};
-    viewport.resize(800, 600);
-    viewport.show();
-    return QApplication::exec();
-}
+
+class StrokeManager {
+
+};
+
+
+#endif //IMAGE_MORPHING_TOOL_STROKEMANAGER_H

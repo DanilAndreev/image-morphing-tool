@@ -1,0 +1,6 @@
+<component name="CopyrightManager">
+  <copyright>
+    <option name="notice" value="Copyright (c) &amp;#36;originalComment.match(&quot;Copyright \(c\) (\d+)&quot;, 1, &quot;-&quot;)&amp;#36;today.year. &#10;License: CC0 1.0 Universal&#10;Permissions:&#10;- Commercial use&#10;- Modification&#10;- Distribution&#10;- Private use&#10;&#10;Limitations:&#10;- Liability&#10;- Trademark use&#10;- Patent use&#10;- Warranty&#10;&#10;Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev" />
+    <option name="myName" value="Danil Andreev CC0" />
+  </copyright>
+</component>
