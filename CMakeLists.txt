@@ -70,5 +70,8 @@ find_package(Qt${QT_VERSION} COMPONENTS ${REQUIRED_LIBS} REQUIRED)
 target_link_libraries(${PROJECT_NAME} ${REQUIRED_LIBS_QUALIFIED} ${OPENGL_LIBRARIES})
 loadQt6DllsIntoTarget(${PROJECT_NAME})
 
+# -------------------------------------------------- Include event_emitter lib
+include_directories(${PROJECT_SOURCE_DIR}/libs/event_emitter/include)
+
 # -------------------------------------------------- Copy GLSL shaders sources
 file(COPY ${PROJECT_SOURCE_DIR}/shaders DESTINATION ${PROJECT_BINARY_DIR})
