@@ -9,6 +9,9 @@ class Stroke : public std::vector<QPoint> {
 public:
     explicit Stroke(const std::list<QPoint>& points) noexcept;
     explicit Stroke(const std::vector<QPoint>& points) noexcept;
+    virtual ~Stroke() = default;
+public:
+
 };
 
 

@@ -13,6 +13,8 @@ class Viewport : public QWidget {
 protected:
     std::list<Stroke> strokes;
     std::list<QPoint> currentStroke;
+private:
+    bool isDrawing = false;
 public:
     explicit Viewport(QWidget *parent = nullptr);
     Viewport(const Viewport &reference) = delete;
@@ -20,8 +22,10 @@ public:
 protected:
     void drawLines(QPainter &painter);
 protected:
-    void paintEvent(QPaintEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
+    void paintEvent(QPaintEvent *event) noexcept override;
+    void mouseMoveEvent(QMouseEvent *event) noexcept override;
+    void mousePressEvent(QMouseEvent *event) noexcept override;
+    void mouseReleaseEvent(QMouseEvent *event) noexcept override;
 };
 
 
