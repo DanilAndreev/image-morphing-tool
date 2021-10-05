@@ -2,6 +2,9 @@
 
 Stroke::Stroke(const std::list<QPoint> &points) noexcept {
     this->clear();
+    for (const QPoint& point : points) {
+        this->push_back(point);
+    }
 }
 
 Stroke::Stroke(const std::vector<QPoint> &points) noexcept {

@@ -20,8 +20,10 @@ public:
 protected:
     void drawLines(QPainter &painter);
 protected:
-    void paintEvent(QPaintEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
+    void paintEvent(QPaintEvent *event) noexcept override;
+    void mouseMoveEvent(QMouseEvent *event) noexcept override;
+    void mousePressEvent(QMouseEvent *event) noexcept override;
+    void mouseReleaseEvent(QMouseEvent *event) noexcept override;
 };
 
 
