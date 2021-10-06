@@ -14,7 +14,7 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
-#include "tools/Tool.h"
+#include "core/Tool/Tool.h"
 
 void Tool::eventFilter(QEvent *event, Viewport *origin) noexcept {
     switch (event->type()) {

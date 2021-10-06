@@ -14,7 +14,7 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
-#include "Stroke/Stroke.h"
+#include "core/Stroke/Stroke.h"
 
 #include <QVector2D>
 

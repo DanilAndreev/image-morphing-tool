@@ -22,8 +22,8 @@
 #include <QPaintEvent>
 #include <QPainter>
 
-#include "Tool.h"
-#include "../Stroke/Stroke.h"
+#include "core/Tool/Tool.h"
+#include "core/Stroke/Stroke.h"
 #include <gui/Viewport.h>
 
 class CurveMorphingTool : public Tool {

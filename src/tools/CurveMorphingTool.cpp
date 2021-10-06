@@ -18,7 +18,7 @@
 
 #include <QPainter>
 
-#include "Stroke/StrokeDrawer.h"
+#include "core/Stroke/StrokeDrawer.h"
 
 CurveMorphingTool::CurveMorphingTool() noexcept: displayDirections(false) {
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2021.
+// Copyright (c) 2021-2021.
 // License: CC0 1.0 Universal
 // Permissions:
 // - Commercial use
@@ -23,7 +23,7 @@
 #include <vector>
 #include <list>
 
-#include "Stroke/Stroke.h"
+#include "core/Stroke/Stroke.h"
 #include "event_emitter.h"
 
 class Viewport : public QWidget, public events::event_emitter {

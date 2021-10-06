@@ -22,7 +22,7 @@
 #include <QApplication>
 
 #include "gui/MainWindow.h"
-#include "tools/ITool.h"
+#include "core/Tool/ITool.h"
 
 class Application {
 protected:

@@ -14,10 +14,10 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
-#include "Stroke/StrokeManager.h"
+#include "core/Stroke/StrokeManager.h"
 #include <QVector2D>
 
-#include "exceptions/NullPointerException.h"
+#include "core/exceptions/NullPointerException.h"
 
 StrokeManager::StrokeManager(Stroke *target) noexcept: stroke(target), targetSize(target ? target->size() : 0) {}
 

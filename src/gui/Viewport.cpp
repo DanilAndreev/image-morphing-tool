@@ -1,4 +1,4 @@
-// Copyright (c) 2021.
+// Copyright (c) 2021-2021.
 // License: CC0 1.0 Universal
 // Permissions:
 // - Commercial use
@@ -14,11 +14,10 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
-#include <exceptions/NullPointerException.h>
-#include <Stroke/StrokeManager.h>
 #include "gui/Viewport.h"
-
-#include "Stroke/StrokeDrawer.h"
+#include "core/exceptions/NullPointerException.h"
+#include "core/Stroke/StrokeDrawer.h"
+#include "core/Stroke/StrokeManager.h"
 
 Viewport::Viewport(QWidget *parent) : QWidget(parent) {}
 

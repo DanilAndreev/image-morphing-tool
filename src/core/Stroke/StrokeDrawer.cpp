@@ -14,7 +14,7 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
-#include "Stroke/StrokeDrawer.h"
+#include "core/Stroke/StrokeDrawer.h"
 
 StrokeDrawer::StrokeDrawer(const Stroke *target) noexcept: stroke(target) {
     this->pen = {Qt::black, 2, Qt::SolidLine};
