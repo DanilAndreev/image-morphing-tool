@@ -16,14 +16,28 @@
 
 #include "Stroke/Stroke.h"
 
-Stroke::Stroke(const std::list<QPoint> &points) noexcept {
+#include <QVector2D>
+
+Stroke::Stroke() noexcept: std::vector<QPoint>() {
+
+}
+
+Stroke::Stroke(const std::list<QPoint> &points) noexcept: std::vector<QPoint>() {
     this->clear();
-    for (const QPoint& point : points) {
+    for (const QPoint &point : points) {
         this->push_back(point);
     }
 }
 
-Stroke::Stroke(const std::vector<QPoint> &points) noexcept {
-    this->clear();
-    this->insert(this->begin(), points.begin(), points.end());
+Stroke::Stroke(const std::vector<QPoint> &points) noexcept: std::vector<QPoint>(points.begin(), points.end()) {}
+
+qreal Stroke::length() {
+    qreal length = 0.0;
+    for (std::size_t i = 1; i < this->size(); i++) {
+        length += Stroke::distance(this->at(i - 1), this->at(i));
+    }
+}
+
+qreal Stroke::distance(const QPoint &a, const QPoint &b) noexcept {
+    return (QVector2D{a} - QVector2D{b}).length();;
 }

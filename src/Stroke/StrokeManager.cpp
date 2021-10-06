@@ -19,10 +19,10 @@
 
 #include "exceptions/NullPointerException.h"
 
-StrokeManager::StrokeManager(Stroke *target) : stroke(target), targetSize(target ? target->size() : 0) {}
+StrokeManager::StrokeManager(Stroke *target) noexcept: stroke(target), targetSize(target ? target->size() : 0) {}
 
-StrokeManager::StrokeManager(const StrokeManager &reference) : stroke(reference.stroke),
-                                                               targetSize(reference.targetSize) {}
+StrokeManager::StrokeManager(const StrokeManager &reference) noexcept: stroke(reference.stroke),
+                                                                       targetSize(reference.targetSize) {}
 
 void StrokeManager::bind(Stroke *target) noexcept {
     this->stroke = target;
@@ -38,7 +38,7 @@ const StrokeManager &StrokeManager::rebuild() const {
                 "You have to use 'bind()' method before executing context based operations."};
     if (this->stroke->empty()) return *this;
     std::vector<QPoint> newPoints;
-    qreal step = this->stokeLength() / static_cast<qreal>(this->targetSize);
+    qreal step = this->stroke->length() / static_cast<qreal>(this->targetSize);
     qreal remainder = 0.0;
     newPoints.emplace_back(QPoint{static_cast<int>(this->stroke->at(0).x()),
                                   static_cast<int>(this->stroke->at(1).y())});
@@ -59,18 +59,6 @@ const StrokeManager &StrokeManager::rebuild() const {
     this->stroke->clear();
     this->stroke->insert(this->stroke->begin(), newPoints.begin(), newPoints.end());
     return *this;
-}
-
-qreal StrokeManager::stokeLength() const noexcept {
-    qreal length = 0.0;
-    for (std::size_t i = 1; i < this->stroke->size(); i++) {
-        length += StrokeManager::distance(this->stroke->at(i - 1), this->stroke->at(i));
-    }
-    return length;
-}
-
-qreal StrokeManager::distance(const QPoint &a, const QPoint &b) noexcept {
-    return (QVector2D{a} - QVector2D{b}).length();
 }
 
 StrokeManager &StrokeManager::setTargetSize(const std::size_t &newSize) noexcept {
