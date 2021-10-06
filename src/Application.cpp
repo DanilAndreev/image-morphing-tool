@@ -19,7 +19,7 @@
 #include <QApplication>
 
 
-Application::Application(int argc, char *argv[]) {
+Application::Application(int argc, char *argv[]): registeredTools{} {
     this->qApplication = new QApplication{argc, argv};
     this->mainWindow = new MainWindow{};
     this->mainWindow->resize(800, 600);
@@ -37,4 +37,9 @@ int Application::exec() {
 Application::~Application() {
     delete this->qApplication;
     delete this->mainWindow;
+}
+
+Application &Application::registerTool(ITool *tool) noexcept {
+    this->registeredTools.insert(tool);
+    return *this;
 }
