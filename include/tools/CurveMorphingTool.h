@@ -20,6 +20,7 @@
 #include <mutex>
 
 #include <QPaintEvent>
+#include <QPainter>
 
 #include "../Stroke/Stroke.h"
 
@@ -29,13 +30,13 @@ public:
     Stroke strokeFrom;
     Stroke strokeTo;
 public:
-
+    bool displayDirections;
 public:
     CurveMorphingTool() noexcept;
     CurveMorphingTool(const CurveMorphingTool& reference) noexcept;
     virtual ~CurveMorphingTool() = default;
 public:
-    void paintEvent(QPaintEvent *event) noexcept;
+    void paintEvent(QPaintEvent *event, QPainter& painter) noexcept;
 public:
     void init();
 };
