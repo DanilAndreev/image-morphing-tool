@@ -15,7 +15,6 @@
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
 #include "gui/Viewport.h"
-#include "core/exceptions/NullPointerException.h"
 #include "core/Stroke/StrokeDrawer.h"
 #include "core/Stroke/StrokeManager.h"
 
