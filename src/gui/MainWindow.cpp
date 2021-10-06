@@ -14,11 +14,11 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
-#include "gui/Application.h"
+#include "gui/MainWindow.h"
 
 #include <QBoxLayout>
 
-Application::Application(QWidget *parent) noexcept: QWidget(parent) {
+MainWindow::MainWindow(QWidget *parent) noexcept: QWidget(parent) {
     this->viewport = new Viewport(this);
     this->toolBar = new ToolBar(this);
 

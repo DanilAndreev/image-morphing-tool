@@ -17,18 +17,13 @@
 #include <exception>
 #include <iostream>
 
-#include <QApplication>
-#include <QDebug>
-
-#include "gui/Application.h"
+#include "Application.h"
 
 int main(int argc, char *argv[]) {
     try {
-        QApplication a(argc, argv);
-        Application app{};
-        app.resize(800, 600);
-        app.show();
-        return QApplication::exec();
+        Application app{argc, argv};
+        app.showGUI();
+        return app.exec();
     } catch (const std::exception& error) {
         std::cerr << "Error: " << error.what() << std::endl;
         exit(-1);

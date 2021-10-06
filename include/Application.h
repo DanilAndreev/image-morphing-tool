@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2021.
+// Copyright (c) 2021.
 // License: CC0 1.0 Universal
 // Permissions:
 // - Commercial use
@@ -17,18 +17,21 @@
 #ifndef IMAGE_MORPHING_TOOL_APPLICATION_H
 #define IMAGE_MORPHING_TOOL_APPLICATION_H
 
-#include <QWidget>
+#include <QApplication>
 
-#include "Viewport.h"
-#include "ToolBar.h"
+#include "gui/MainWindow.h"
 
-class Application : public QWidget {
+class Application {
 protected:
-    Viewport* viewport;
-    ToolBar* toolBar;
+    QApplication* qApplication;
+    MainWindow* mainWindow;
 public:
-    Application(QWidget* parent = nullptr) noexcept;
-    ~Application() noexcept = default;
+    Application(int argc, char *argv[]);
+    Application(const Application&) = delete;
+    virtual ~Application();
+public:
+    Application& showGUI() noexcept;
+    int exec();
 };
 
 
