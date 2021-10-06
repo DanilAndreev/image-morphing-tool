@@ -17,21 +17,24 @@
 #ifndef IMAGE_MORPHING_TOOL_ITOOL_H
 #define IMAGE_MORPHING_TOOL_ITOOL_H
 
+class Viewport;
 
 class ITool {
 public:
+    ITool() = default;
     ITool(const ITool&) = delete;
+    ~ITool() = default;
 public:
     virtual void init() = 0;
 public:
-    virtual void paintEvent(QPaintEvent) noexcept = 0;
-    virtual void mouseMoveEvent(QMouseEvent* event) noexcept = 0;
-    virtual void mouseButtonPressEvent(QMouseEvent* event) noexcept = 0;
-    virtual void mouseButtonReleaseEvent(QMouseEvent* event) noexcept = 0;
-    virtual void keyPressEvent(QKeyEvent* event) noexcept = 0;
-    virtual void keyReleaseEvent(QKeyEvent* event) noexcept = 0;
+    virtual void paintEvent(QPaintEvent* event, Viewport* origin) noexcept = 0;
+    virtual void mouseMoveEvent(QMouseEvent* event, Viewport* origin) noexcept = 0;
+    virtual void mouseButtonPressEvent(QMouseEvent* event, Viewport* origin) noexcept = 0;
+    virtual void mouseButtonReleaseEvent(QMouseEvent* event, Viewport* origin) noexcept = 0;
+    virtual void keyPressEvent(QKeyEvent* event, Viewport* origin) noexcept = 0;
+    virtual void keyReleaseEvent(QKeyEvent* event, Viewport* origin) noexcept = 0;
 public:
-    virtual void eventFilter(QEvent* event) noexcept = 0;
+    virtual void eventFilter(QEvent* event, Viewport* origin) noexcept = 0;
 };
 
 

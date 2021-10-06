@@ -20,14 +20,14 @@
 #include <QApplication>
 #include <QDebug>
 
-#include "Viewport/Viewport.h"
+#include "gui/Application.h"
 
 int main(int argc, char *argv[]) {
     try {
         QApplication a(argc, argv);
-        Viewport viewport{};
-        viewport.resize(800, 600);
-        viewport.show();
+        Application app{};
+        app.resize(800, 600);
+        app.show();
         return QApplication::exec();
     } catch (const std::exception& error) {
         std::cerr << "Error: " << error.what() << std::endl;

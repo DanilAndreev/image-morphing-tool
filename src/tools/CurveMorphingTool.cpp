@@ -16,17 +16,16 @@
 
 #include "tools/CurveMorphingTool.h"
 
+#include <QPainter>
+
 #include "Stroke/StrokeDrawer.h"
 
 CurveMorphingTool::CurveMorphingTool() noexcept: displayDirections(false) {
 
 }
 
-CurveMorphingTool::CurveMorphingTool(const CurveMorphingTool &reference) noexcept {
-
-}
-
-void CurveMorphingTool::paintEvent(QPaintEvent *event, QPainter& painter) noexcept {
+void CurveMorphingTool::paintEvent(QPaintEvent *event, Viewport* origin) noexcept {
+    QPainter painter(origin);
     StrokeDrawer drawer{};
     drawer.bind(&this->strokeFrom);
     drawer.drawPoints(painter);
@@ -39,4 +38,8 @@ void CurveMorphingTool::paintEvent(QPaintEvent *event, QPainter& painter) noexce
             painter.drawLine(this->strokeFrom.at(i), this->strokeTo.at(i));
         }
     }
+}
+
+void CurveMorphingTool::init() {
+
 }

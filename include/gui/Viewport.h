@@ -24,7 +24,7 @@
 #include <list>
 
 #include "Stroke/Stroke.h"
-#include "../../libs/event_emitter/include/event_emitter.h"
+#include "event_emitter.h"
 
 class Viewport : public QWidget, public events::event_emitter {
 protected:

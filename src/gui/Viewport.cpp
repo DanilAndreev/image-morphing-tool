@@ -16,7 +16,7 @@
 
 #include <exceptions/NullPointerException.h>
 #include <Stroke/StrokeManager.h>
-#include "Viewport/Viewport.h"
+#include "gui/Viewport.h"
 
 #include "Stroke/StrokeDrawer.h"
 

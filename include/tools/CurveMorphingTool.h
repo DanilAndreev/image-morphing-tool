@@ -22,9 +22,11 @@
 #include <QPaintEvent>
 #include <QPainter>
 
+#include "Tool.h"
 #include "../Stroke/Stroke.h"
+#include <gui/Viewport.h>
 
-class CurveMorphingTool {
+class CurveMorphingTool : public Tool {
 public:
     std::mutex processLock;
     Stroke strokeFrom;
@@ -33,12 +35,11 @@ public:
     bool displayDirections;
 public:
     CurveMorphingTool() noexcept;
-    CurveMorphingTool(const CurveMorphingTool& reference) noexcept;
     virtual ~CurveMorphingTool() = default;
 public:
-    void paintEvent(QPaintEvent *event, QPainter& painter) noexcept;
+    void paintEvent(QPaintEvent *event, Viewport* origin) noexcept override;
 public:
-    void init();
+    void init() override;
 };
 
 
