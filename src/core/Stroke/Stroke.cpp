@@ -36,6 +36,7 @@ qreal Stroke::length() {
     for (std::size_t i = 1; i < this->size(); i++) {
         length += Stroke::distance(this->at(i - 1), this->at(i));
     }
+    return length;
 }
 
 qreal Stroke::distance(const QPoint &a, const QPoint &b) noexcept {
