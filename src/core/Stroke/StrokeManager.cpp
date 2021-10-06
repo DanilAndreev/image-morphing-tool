@@ -61,8 +61,8 @@ const StrokeManager &StrokeManager::rebuild() const {
     return *this;
 }
 
-StrokeManager &StrokeManager::setTargetSize(const std::size_t &newSize) noexcept {
-    if (!newSize) this->targetSize = 1; //TODO: throw an exception.
+StrokeManager &StrokeManager::setTargetSize(const std::size_t &newSize) {
+    if (!newSize) throw Exceptions::RangeException("Target rebuild size must be greater than 0.");
     this->targetSize = newSize - 1;
     return *this;
 }

@@ -18,6 +18,7 @@
 #define IMAGE_MORPHING_TOOL_STROKEMANAGER_H
 
 #include "Stroke.h"
+#include "../exceptions/RangeException.h"
 
 class StrokeManager {
 protected:
@@ -33,7 +34,10 @@ public:
 public:
     const StrokeManager& rebuild() const;
 public:
-    StrokeManager& setTargetSize(const std::size_t& newSize) noexcept;
+    /**
+     * @throw RangeException
+     */
+    StrokeManager& setTargetSize(const std::size_t& newSize);
 };
 
 
