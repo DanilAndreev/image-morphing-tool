@@ -15,13 +15,12 @@
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
 #include <exceptions/NullPointerException.h>
+#include <Stroke/StrokeManager.h>
 #include "Viewport/Viewport.h"
 
 #include "Stroke/StrokeDrawer.h"
 
-Viewport::Viewport(QWidget *parent) : QWidget(parent) {
-
-}
+Viewport::Viewport(QWidget *parent) : QWidget(parent) {}
 
 void Viewport::drawLines(QPainter &painter) {
     QPen pen(Qt::black, 2, Qt::SolidLine);
@@ -29,6 +28,7 @@ void Viewport::drawLines(QPainter &painter) {
     for (const Stroke &stroke : this->strokes) {
         drawer.bind(&stroke);
         drawer.draw(painter);
+        drawer.drawPoints(painter);
     }
     if (!this->currentStroke.empty()) {
         Stroke current = Stroke{this->currentStroke};
@@ -40,6 +40,7 @@ void Viewport::drawLines(QPainter &painter) {
 
 void Viewport::paintEvent(QPaintEvent *event) noexcept {
     QPainter painter(this);
+    painter.eraseRect(painter.window());
     drawLines(painter);
     QWidget::paintEvent(event);
 }
@@ -61,7 +62,11 @@ void Viewport::mousePressEvent(QMouseEvent *event) noexcept {
 
 void Viewport::mouseReleaseEvent(QMouseEvent *event) noexcept {
     if (event->button() == Qt::LeftButton && !this->currentStroke.empty()) {
-        this->strokes.emplace_back(Stroke{this->currentStroke});
+        Stroke stroke{this->currentStroke};
+        StrokeManager manager{&stroke};
+        manager.setTargetSize(20).rebuild();
+        this->strokes.emplace_back(stroke);
+        this->currentStroke.clear();
         this->repaint();
     }
     QWidget::mouseReleaseEvent(event);

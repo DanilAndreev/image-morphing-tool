@@ -45,3 +45,18 @@ void StrokeDrawer::draw(QPainter &painter) {
 void StrokeDrawer::drawLine(QPainter &painter, const QPoint &a, const QPoint &b) {
     painter.drawLine(a.x(), a.y(), b.x(), b.y());
 }
+
+void StrokeDrawer::drawPoints(QPainter &painter) {
+    if (!this->stroke)
+        throw Exceptions::NullPointerException{
+        "You have to use 'bind()' method before executing context based operations."};
+    QPen oldPen = painter.pen();
+    QPen penn = QPen{};
+    penn.setColor({255, 0, 0});
+    penn.setWidth(3);
+    painter.setPen(penn);
+    for (const QPoint& point : *this->stroke) {
+        painter.drawPoint(point);
+    }
+    painter.setPen(oldPen);
+}

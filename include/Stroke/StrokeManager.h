@@ -24,10 +24,19 @@ protected:
     mutable Stroke *stroke = nullptr;
     std::size_t targetSize = 0;
 public:
+    explicit StrokeManager(Stroke* target = nullptr);
+    StrokeManager(const StrokeManager& reference);
+    virtual ~StrokeManager() = default;
+public:
     void bind(Stroke* target) noexcept;
     void unbind() noexcept;
 public:
     const StrokeManager& rebuild() const;
+    qreal stokeLength() const noexcept;
+public:
+    StrokeManager& setTargetSize(const std::size_t& newSize) noexcept;
+private:
+    static inline qreal distance(const QPoint& a, const QPoint& b) noexcept;
 };
 
 

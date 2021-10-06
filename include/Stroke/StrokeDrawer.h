@@ -38,6 +38,7 @@ public:
      * @throw Exceptions::NullPointerException
      */
     void draw(QPainter& painter);
+    void drawPoints(QPainter& painter);
 private:
     inline static void drawLine(QPainter& painter, const QPoint& a, const QPoint& b);
 };
