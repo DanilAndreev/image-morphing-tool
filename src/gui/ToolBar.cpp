@@ -16,6 +16,17 @@
 
 #include "gui/ToolBar.h"
 
-ToolBar::ToolBar(QWidget *parent): QWidget(parent) {
+#include <QBoxLayout>
+#include <QPushButton>
 
+ToolBar::ToolBar(QWidget *parent): QWidget(parent) {
+    QPushButton* button1 = new QPushButton();
+    button1->setText("push me");
+    QPushButton* button2 = new QPushButton();
+    button2->setText("push me");
+
+    QBoxLayout* layout = new QBoxLayout(QBoxLayout::Direction::TopToBottom, this);
+    layout->addWidget(button1);
+    layout->addWidget(button2);
+    this->setLayout(layout);
 }
