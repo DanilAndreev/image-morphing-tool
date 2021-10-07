@@ -22,10 +22,10 @@
 Application::Application(int argc, char *argv[]): registeredTools{} {
     this->qApplication = new QApplication{argc, argv};
     this->mainWindow = new MainWindow{};
-    this->mainWindow->resize(800, 600);
 }
 
 Application &Application::showGUI() noexcept {
+    this->mainWindow->resize(800, 600);
     this->mainWindow->show();
     return *this;
 }
@@ -35,11 +35,19 @@ int Application::exec() {
 }
 
 Application::~Application() {
+    for (ITool* tool : this->registeredTools) {
+        tool->uninitialize(this);
+    }
     delete this->qApplication;
     delete this->mainWindow;
 }
 
 Application &Application::registerTool(ITool *tool) noexcept {
+    tool->initialize(this);
     this->registeredTools.insert(tool);
     return *this;
+}
+
+MainWindow& Application::getMainWindow() const {
+    return *mainWindow;
 }

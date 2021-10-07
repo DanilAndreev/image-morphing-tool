@@ -23,20 +23,21 @@
 #include <QEvent>
 
 #include "ITool.h"
+#include "Application.h"
 
 class Tool : public ITool {
 public:
     Tool() = default;
     ~Tool() = default;
 public:
-    void paintEvent(QPaintEvent* event, Viewport* origin) noexcept override {};
-    void mouseMoveEvent(QMouseEvent* event, Viewport* origin) noexcept override {};
-    void mouseButtonPressEvent(QMouseEvent* event, Viewport* origin) noexcept override {};
-    void mouseButtonReleaseEvent(QMouseEvent* event, Viewport* origin) noexcept override {};
-    void keyPressEvent(QKeyEvent* event, Viewport* origin) noexcept override {};
-    void keyReleaseEvent(QKeyEvent* event, Viewport* origin) noexcept override {};
+//    void paintEvent(QPaintEvent* event, Viewport* origin) noexcept override {};
+//    void mouseMoveEvent(QMouseEvent* event, Viewport* origin) noexcept override {};
+//    void mouseButtonPressEvent(QMouseEvent* event, Viewport* origin) noexcept override {};
+//    void mouseButtonReleaseEvent(QMouseEvent* event, Viewport* origin) noexcept override {};
+//    void keyPressEvent(QKeyEvent* event, Viewport* origin) noexcept override {};
+//    void keyReleaseEvent(QKeyEvent* event, Viewport* origin) noexcept override {};
 public:
-    void eventFilter(QEvent* event, Viewport* origin) noexcept override;
+//    void eventFilter(QEvent* event, Viewport* origin) noexcept override;
 };
 
 

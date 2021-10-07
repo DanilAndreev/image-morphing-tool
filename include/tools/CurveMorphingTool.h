@@ -24,22 +24,28 @@
 
 #include "core/Tool/Tool.h"
 #include "core/Stroke/Stroke.h"
-#include <gui/Viewport.h>
+#include "gui/Viewport.h"
+#include "events/VPaintEvent.h"
+#include "events/VMouseEvent.h"
 
-class CurveMorphingTool : public Tool {
+
+class CurveMorphingTool : public ITool {
 public:
     std::mutex processLock;
     Stroke strokeFrom;
     Stroke strokeTo;
 public:
     bool displayDirections;
+protected:
+    events::event_emitter::event_handler_t eventPaintCallback;
 public:
     CurveMorphingTool() noexcept;
     virtual ~CurveMorphingTool() = default;
 public:
-    void paintEvent(QPaintEvent *event, Viewport* origin) noexcept override;
+    void handlePaintEvent(VPaintEvent& event);
 public:
-    void init() override;
+    void initialize(Application* application) override;
+    void uninitialize(Application* application) noexcept override;
 };
 
 

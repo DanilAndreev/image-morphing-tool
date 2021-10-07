@@ -27,6 +27,18 @@
 #include "event_emitter.h"
 
 class Viewport : public QWidget, public events::event_emitter {
+public:
+    static const char* PAINT_EVENT;
+
+    static const char* MOUSE_EVENT;
+    static const char* MOUSE_MOVE_EVENT;
+    static const char* MOUSE_PRESS_EVENT;
+    static const char* MOUSE_RELEASE_EVENT;
+    static const char* MOUSE_LEAVE_EVENT;
+
+    static const char* KEY_EVENT;
+    static const char* KEY_PRESS_EVENT;
+    static const char* KEY_RELEASE_EVENT;
 protected:
     std::list<Stroke> strokes;
     std::list<QPoint> currentStroke;

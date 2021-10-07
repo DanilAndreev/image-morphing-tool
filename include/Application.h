@@ -38,6 +38,8 @@ public:
 public:
     Application& showGUI() noexcept;
     int exec();
+public:
+    MainWindow& getMainWindow() const;
 };
 
 

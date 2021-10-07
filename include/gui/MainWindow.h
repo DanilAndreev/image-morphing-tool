@@ -29,6 +29,9 @@ protected:
 public:
     MainWindow(QWidget* parent = nullptr) noexcept;
     ~MainWindow() noexcept = default;
+public:
+    Viewport *getViewport() const;
+    ToolBar *getToolBar() const;
 };
 
 

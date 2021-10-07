@@ -27,3 +27,11 @@ MainWindow::MainWindow(QWidget *parent) noexcept: QWidget(parent) {
     layout->addWidget(this->viewport);
     this->setLayout(layout);
 }
+
+Viewport *MainWindow::getViewport() const {
+    return viewport;
+}
+
+ToolBar *MainWindow::getToolBar() const {
+    return toolBar;
+}

@@ -18,12 +18,17 @@
 #include <iostream>
 
 #include "Application.h"
+#include "tools/CurveMorphingTool.h"
 
 int main(int argc, char *argv[]) {
     try {
         Application app{argc, argv};
+        auto curveMorphingTool = new CurveMorphingTool{};
+        app.registerTool(curveMorphingTool);
         app.showGUI();
-        return app.exec();
+        int code = app.exec();
+        delete curveMorphingTool;
+        return code;
     } catch (const std::exception& error) {
         std::cerr << "Error: " << error.what() << std::endl;
         exit(-1);

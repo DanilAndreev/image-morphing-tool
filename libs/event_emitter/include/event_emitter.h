@@ -20,6 +20,7 @@
 #include <string>
 #include <map>
 #include <unordered_set>
+#include <functional>
 
 namespace events {
     class event_emitter;
@@ -59,11 +60,12 @@ namespace events {
      */
     class event_emitter {
     public:
-        /// EventHandler - event handler function prototype.
-        typedef void(*EventHandler)(event_base &);
+        /// event_handler_t - event handler function prototype.
+//        typedef void(*event_handler_t)(event_base &);
+        using event_handler_t = std::function<void(event_base &)>;
     private:
         /// subscribers - event subscribers. Sorted by event names.
-        std::map<std::string, std::unordered_set<EventHandler>> subscribers;
+        std::map<std::string, std::unordered_set<event_handler_t*>> subscribers;
     public:
         event_emitter() = default;
         ~event_emitter() = default;
@@ -77,9 +79,9 @@ namespace events {
             auto eventSubscribers = this->subscribers.find(eventName);
             if (eventSubscribers == this->subscribers.end()) return;
             event_base *eventCopy = event.copy();
-            for (EventHandler handler : eventSubscribers->second) {
+            for (event_handler_t* handler : eventSubscribers->second) {
                 if (event._propagation_stopped) break;
-                handler(*eventCopy);
+                (*handler)(*eventCopy);
             }
             delete eventCopy;
         }
@@ -89,10 +91,10 @@ namespace events {
          * @param eventName - Event name string.
          * @param handler - Handler function pointer.
          */
-        void add_listener(const std::string &eventName, EventHandler handler) {
+        void add_listener(const std::string &eventName, event_handler_t* handler) {
             auto iterator = this->subscribers.find(eventName);
             if (iterator == this->subscribers.end()) {
-                std::unordered_set<EventHandler> handlers;
+                std::unordered_set<event_handler_t*> handlers;
                 handlers.insert(handler);
                 this->subscribers.insert(std::make_pair(eventName, handlers));
             } else {
@@ -105,8 +107,8 @@ namespace events {
          * @param eventName - Event name string.
          * @param handler - Handler function pointer.
          */
-        void remove_listener(const std::string &eventName, EventHandler handler) {
-            std::unordered_set<EventHandler> &eventSubscribers = this->subscribers[eventName];
+        void remove_listener(const std::string &eventName, event_handler_t* handler) {
+            std::unordered_set<event_handler_t*> &eventSubscribers = this->subscribers[eventName];
             eventSubscribers.extract(handler);
         }
     };

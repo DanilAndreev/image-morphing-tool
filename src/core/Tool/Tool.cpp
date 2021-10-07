@@ -16,27 +16,27 @@
 
 #include "core/Tool/Tool.h"
 
-void Tool::eventFilter(QEvent *event, Viewport *origin) noexcept {
-    switch (event->type()) {
-        case QEvent::Type::Paint:
-            this->paintEvent(static_cast<QPaintEvent *>(event), origin);
-            break;
-        case QEvent::Type::KeyPress:
-            this->keyPressEvent(static_cast<QKeyEvent *>(event), origin);
-            break;
-        case QEvent::Type::KeyRelease:
-            this->keyReleaseEvent(static_cast<QKeyEvent *>(event), origin);
-            break;
-        case QEvent::Type::MouseMove:
-            this->mouseMoveEvent(static_cast<QMouseEvent *>(event), origin);
-            break;
-        case QEvent::Type::MouseButtonPress:
-            this->mouseButtonPressEvent(static_cast<QMouseEvent *>(event), origin);
-            break;
-        case QEvent::Type::MouseButtonRelease:
-            this->mouseButtonReleaseEvent(static_cast<QMouseEvent *>(event), origin);
-            break;
-        default:
-            break;
-    }
-}
+//void Tool::eventFilter(QEvent *event, Viewport *origin) noexcept {
+//    switch (event->type()) {
+//        case QEvent::Type::Paint:
+//            this->paintEvent(static_cast<QPaintEvent *>(event), origin);
+//            break;
+//        case QEvent::Type::KeyPress:
+//            this->keyPressEvent(static_cast<QKeyEvent *>(event), origin);
+//            break;
+//        case QEvent::Type::KeyRelease:
+//            this->keyReleaseEvent(static_cast<QKeyEvent *>(event), origin);
+//            break;
+//        case QEvent::Type::MouseMove:
+//            this->mouseMoveEvent(static_cast<QMouseEvent *>(event), origin);
+//            break;
+//        case QEvent::Type::MouseButtonPress:
+//            this->mouseButtonPressEvent(static_cast<QMouseEvent *>(event), origin);
+//            break;
+//        case QEvent::Type::MouseButtonRelease:
+//            this->mouseButtonReleaseEvent(static_cast<QMouseEvent *>(event), origin);
+//            break;
+//        default:
+//            break;
+//    }
+//}
