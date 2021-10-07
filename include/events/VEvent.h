@@ -22,14 +22,19 @@
 
 class VEvent : public events::event_base {
 protected:
-    mutable Viewport* _origin;
+    Viewport* _origin = nullptr;
+    bool _repaintQueued = false;
 public:
     explicit VEvent(Viewport* origin) noexcept: events::event_base(), _origin(origin) {}
     VEvent(const VEvent& reference) noexcept: events::event_base(reference), _origin(reference._origin) {}
     ~VEvent() override = default;
 public:
     Viewport* origin() noexcept { return this->_origin; }
-    [[nodiscard]] VEvent * copy() const noexcept override { return new VEvent(*this); }
+public:
+    void queueRepaint() noexcept {this->_repaintQueued = true; }
+    [[nodiscard]] const bool& repaintQueued() const noexcept {
+        return this->_repaintQueued;
+    }
 };
 
 

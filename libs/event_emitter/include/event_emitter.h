@@ -50,8 +50,6 @@ namespace events {
         void stop_propagation() noexcept {
             this->_propagation_stopped = true;
         }
-
-        [[nodiscard]] virtual event_base *copy() const noexcept = 0;
     };
 
     /**
@@ -75,15 +73,13 @@ namespace events {
          * @param eventName - Event name string.
          * @param event - Event object. Each handler can modify it while handling.
          */
-        void emit_event(const std::string &eventName, const event_base &event) {
+        void emit_event(const std::string &eventName, event_base &event) {
             auto eventSubscribers = this->subscribers.find(eventName);
             if (eventSubscribers == this->subscribers.end()) return;
-            event_base *eventCopy = event.copy();
             for (event_handler_t* handler : eventSubscribers->second) {
                 if (event._propagation_stopped) break;
-                (*handler)(*eventCopy);
+                (*handler)(event);
             }
-            delete eventCopy;
         }
 
         /**

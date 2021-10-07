@@ -17,8 +17,8 @@
 #ifndef IMAGE_MORPHING_TOOL_ITOOL_H
 #define IMAGE_MORPHING_TOOL_ITOOL_H
 
-class Viewport;
 class Application;
+class Viewport;
 
 class ITool {
 public:
@@ -28,15 +28,6 @@ public:
 public:
     virtual void initialize(Application* application) = 0;
     virtual void uninitialize(Application* application) noexcept = 0;
-public:
-//    virtual void paintEvent(QPaintEvent* event, Viewport* origin) noexcept = 0;
-//    virtual void mouseMoveEvent(QMouseEvent* event, Viewport* origin) noexcept = 0;
-//    virtual void mouseButtonPressEvent(QMouseEvent* event, Viewport* origin) noexcept = 0;
-//    virtual void mouseButtonReleaseEvent(QMouseEvent* event, Viewport* origin) noexcept = 0;
-//    virtual void keyPressEvent(QKeyEvent* event, Viewport* origin) noexcept = 0;
-//    virtual void keyReleaseEvent(QKeyEvent* event, Viewport* origin) noexcept = 0;
-public:
-//    virtual void eventFilter(QEvent* event, Viewport* origin) noexcept = 0;
 };
 
 

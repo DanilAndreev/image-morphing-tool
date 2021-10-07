@@ -26,8 +26,6 @@ public:
     VMouseEvent(const QMouseEvent& qevent, Viewport* origin) noexcept: VEvent(origin), QMouseEvent(qevent) {}
     VMouseEvent(const VMouseEvent& reference): VEvent(reference), QMouseEvent(reference) {}
     ~VMouseEvent() override = default;
-public:
-    [[nodiscard]] VMouseEvent * copy() const noexcept override { return new VMouseEvent(*this); }
 };
 
 

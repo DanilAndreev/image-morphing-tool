@@ -21,17 +21,17 @@
 #include "events/VPaintEvent.h"
 #include "events/VMouseEvent.h"
 
-const char* Viewport::PAINT_EVENT = "paint";
+const char *Viewport::PAINT_EVENT = "paint";
 
-const char* Viewport::MOUSE_EVENT = "mouse";
-const char* Viewport::MOUSE_MOVE_EVENT = "mouse_move";
-const char* Viewport::MOUSE_PRESS_EVENT = "mouse_press";
-const char* Viewport::MOUSE_RELEASE_EVENT = "mouse_release";
-const char* Viewport::MOUSE_LEAVE_EVENT = "mouse_leave";
+const char *Viewport::MOUSE_EVENT = "mouse";
+const char *Viewport::MOUSE_MOVE_EVENT = "mouse_move";
+const char *Viewport::MOUSE_PRESS_EVENT = "mouse_press";
+const char *Viewport::MOUSE_RELEASE_EVENT = "mouse_release";
+const char *Viewport::MOUSE_LEAVE_EVENT = "mouse_leave";
 
-const char* Viewport::KEY_EVENT = "key";
-const char* Viewport::KEY_PRESS_EVENT = "key_press";
-const char* Viewport::KEY_RELEASE_EVENT = "key_release";
+const char *Viewport::KEY_EVENT = "key";
+const char *Viewport::KEY_PRESS_EVENT = "key_press";
+const char *Viewport::KEY_RELEASE_EVENT = "key_release";
 
 
 Viewport::Viewport(QWidget *parent) : QWidget(parent) {}
@@ -55,37 +55,31 @@ void Viewport::drawLines(QPainter &painter) {
 void Viewport::paintEvent(QPaintEvent *event) noexcept {
     QPainter painter(this);
     painter.eraseRect(painter.window());
-    drawLines(painter);
-    this->emit_event(Viewport::PAINT_EVENT, VPaintEvent{*event, this, &painter});
+    painter.end();
+    VPaintEvent vEvent{*event, this};
+    this->emit_event(Viewport::PAINT_EVENT, vEvent);
     QWidget::paintEvent(event);
+    if (vEvent.repaintQueued()) this->repaint();
 }
 
 void Viewport::mouseMoveEvent(QMouseEvent *event) noexcept {
-    if (event->buttons().testFlag(Qt::MouseButton::LeftButton)) {
-        this->currentStroke.push_back(event->pos());
-        this->repaint();
-    }
-    this->emit_event(Viewport::MOUSE_MOVE_EVENT, VMouseEvent{*event, this});
+    VMouseEvent vEvent{*event, this};
+    this->emit_event(Viewport::MOUSE_MOVE_EVENT, vEvent);
     QWidget::mouseMoveEvent(event);
+    if (vEvent.repaintQueued())
+        this->repaint();
 }
 
 void Viewport::mousePressEvent(QMouseEvent *event) noexcept {
-    if (event->button() == Qt::MouseButton::LeftButton) {
-        this->currentStroke.clear();
-    }
-    this->emit_event(Viewport::MOUSE_PRESS_EVENT, VMouseEvent{*event, this});
+    VMouseEvent vEvent{*event, this};
+    this->emit_event(Viewport::MOUSE_PRESS_EVENT, vEvent);
     QWidget::mousePressEvent(event);
+    if (vEvent.repaintQueued()) this->repaint();
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent *event) noexcept {
-    if (event->button() == Qt::LeftButton && !this->currentStroke.empty()) {
-        Stroke stroke{this->currentStroke};
-        StrokeManager manager{&stroke};
-        manager.setTargetSize(20).rebuild();
-        this->strokes.emplace_back(stroke);
-        this->currentStroke.clear();
-        this->repaint();
-    }
-    this->emit_event(Viewport::MOUSE_RELEASE_EVENT, VMouseEvent{*event, this});
+    VMouseEvent vEvent{*event, this};
+    this->emit_event(Viewport::MOUSE_RELEASE_EVENT, vEvent);
     QWidget::mouseReleaseEvent(event);
+    if (vEvent.repaintQueued()) this->repaint();
 }

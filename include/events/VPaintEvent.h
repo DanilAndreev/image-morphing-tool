@@ -24,17 +24,10 @@
 #include "VEvent.h"
 
 class VPaintEvent: public VEvent, public QPaintEvent {
-protected:
-    mutable QPainter* _painter;
 public:
-    VPaintEvent(const QPaintEvent& qevent, Viewport* origin, QPainter* painter) noexcept:
-            VEvent(origin), QPaintEvent(qevent), _painter(painter) {}
+    VPaintEvent(const QPaintEvent& qevent, Viewport* origin) noexcept: VEvent(origin), QPaintEvent(qevent) {}
     VPaintEvent(const VPaintEvent& reference): VEvent(reference), QPaintEvent(reference) {}
     ~VPaintEvent() override = default;
-public:
-    [[nodiscard]] VPaintEvent * copy() const noexcept override { return new VPaintEvent(*this); }
-public:
-    QPainter* painter() const noexcept { return this->_painter; }
 };
 
 
