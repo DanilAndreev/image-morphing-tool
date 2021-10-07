@@ -21,33 +21,17 @@
 #include "core/Stroke/StrokeManager.h"
 #include "core/Stroke/StrokeDrawer.h"
 
-CurveMorphingTool::CurveMorphingTool() noexcept: displayDirections(false) {
-    this->eventPaintCallback = [this](events::event_base &event) {
-        this->handlePaintEvent(dynamic_cast<VPaintEvent &>(event));
-    };
-    this->eventMouseMoveCallback = [this](events::event_base &event) {
-        this->handleMouseMoveEvent(dynamic_cast<VMouseEvent &>(event));
-    };
-    this->eventMousePressCallback = [this](events::event_base &event) {
-        this->handleMousePressEvent(dynamic_cast<VMouseEvent &>(event));
-    };
-    this->eventMouseReleaseCallback = [this](events::event_base &event) {
-        this->handleMouseReleaseEvent(dynamic_cast<VMouseEvent &>(event));
-    };
-}
+CurveMorphingTool::CurveMorphingTool() noexcept: ToolViewportEvents(), displayDirections(false) {}
 
 void CurveMorphingTool::initialize(Application *application) {
-    application->getMainWindow().getViewport()->add_listener(Viewport::PAINT_EVENT, &this->eventPaintCallback);
-    application->getMainWindow().getViewport()->add_listener(Viewport::MOUSE_MOVE_EVENT, &this->eventMouseMoveCallback);
-    application->getMainWindow().getViewport()->add_listener(Viewport::MOUSE_PRESS_EVENT, &this->eventMousePressCallback);
-    application->getMainWindow().getViewport()->add_listener(Viewport::MOUSE_RELEASE_EVENT, &this->eventMouseReleaseCallback);
+    ToolViewportEvents::initialize(application);
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {
-    application->getMainWindow().getViewport()->remove_listener(Viewport::PAINT_EVENT, &this->eventPaintCallback);
+    ToolViewportEvents::uninitialize(application);
 }
 
-void CurveMorphingTool::handlePaintEvent(VPaintEvent &event) {
+void CurveMorphingTool::paintEventHandler(VPaintEvent &event) {
     QPainter painter(event.origin());
     StrokeDrawer drawer{};
     if (!this->strokeFrom.empty()) {
@@ -74,20 +58,20 @@ void CurveMorphingTool::handlePaintEvent(VPaintEvent &event) {
     }
 }
 
-void CurveMorphingTool::handleMouseMoveEvent(VMouseEvent &event) {
+void CurveMorphingTool::mouseMoveEventHandler(VMouseEvent &event) {
     if (event.buttons().testFlag(Qt::MouseButton::LeftButton)) {
         this->currentStroke.push_back(event.pos());
         event.queueRepaint();
     }
 }
 
-void CurveMorphingTool::handleMousePressEvent(VMouseEvent &event) {
+void CurveMorphingTool::mousePressEventHandler(VMouseEvent &event) {
     if (event.button() == Qt::MouseButton::LeftButton) {
         this->currentStroke.clear();
     }
 }
 
-void CurveMorphingTool::handleMouseReleaseEvent(VMouseEvent &event) {
+void CurveMorphingTool::mouseReleaseEventHandler(VMouseEvent &event) {
     if (event.button() == Qt::LeftButton && !this->currentStroke.empty()) {
         Stroke stroke{this->currentStroke};
         StrokeManager manager{&stroke};

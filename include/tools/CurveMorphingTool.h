@@ -23,15 +23,11 @@
 #include <QPaintEvent>
 #include <QPainter>
 
-#include "Application.h"
-#include "core/Tool/ITool.h"
+#include "core/Tool/ToolViewportEvents.h"
 #include "core/Stroke/Stroke.h"
-#include "gui/Viewport.h"
-#include "events/VPaintEvent.h"
-#include "events/VMouseEvent.h"
 
 
-class CurveMorphingTool : public ITool {
+class CurveMorphingTool : public ToolViewportEvents {
 public:
     std::mutex processLock;
     Stroke strokeFrom;
@@ -41,19 +37,14 @@ public:
 public:
     bool displayDirections = false;
     bool firstStroke = true;
-protected:
-    events::event_emitter::event_handler_t eventPaintCallback;
-    events::event_emitter::event_handler_t eventMousePressCallback;
-    events::event_emitter::event_handler_t eventMouseReleaseCallback;
-    events::event_emitter::event_handler_t eventMouseMoveCallback;
 public:
     CurveMorphingTool() noexcept;
     virtual ~CurveMorphingTool() = default;
 public:
-    void handlePaintEvent(VPaintEvent& event);
-    void handleMouseMoveEvent(VMouseEvent& event);
-    void handleMousePressEvent(VMouseEvent& event);
-    void handleMouseReleaseEvent(VMouseEvent& event);
+    void paintEventHandler(VPaintEvent& event) override;
+    void mouseMoveEventHandler(VMouseEvent& event) override;
+    void mousePressEventHandler(VMouseEvent& event) override;
+    void mouseReleaseEventHandler(VMouseEvent& event) override;
 public:
     void initialize(Application* application) override;
     void uninitialize(Application* application) noexcept override;
