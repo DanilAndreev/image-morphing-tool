@@ -30,11 +30,11 @@ protected:
     ToolBar* toolBar;
     Application* application;
 public:
-    MainWindow(Application* application, QWidget* parent = nullptr) noexcept;
-    ~MainWindow() noexcept = default;
+    explicit MainWindow(Application* application, QWidget* parent = nullptr) noexcept;
+    ~MainWindow() noexcept override = default;
 public:
-    Viewport *getViewport() const;
-    ToolBar *getToolBar() const;
+    [[nodiscard]] Viewport *getViewport() const;
+    [[nodiscard]] ToolBar *getToolBar() const;
 };
 
 

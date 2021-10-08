@@ -22,7 +22,7 @@
 #include "events/SnapshotRestoreEvent.h"
 
 Application::Application(QApplication* qApplication): registeredTools{}, qApplication(qApplication) {
-    this->mainWindow = new MainWindow{};
+    this->mainWindow = new MainWindow{this};
 }
 
 Application &Application::showGUI() noexcept {
@@ -40,7 +40,7 @@ Application::~Application() {
         tool->uninitialize(this);
     }
     delete this->mainWindow;
-    for (const auto& snapshot : this->history) {
+    for (const auto& snapshot : this->_history) {
         delete snapshot;
     }
 }
@@ -58,12 +58,20 @@ MainWindow& Application::getMainWindow() const {
 const Snapshot *Application::makeSnapshot() {
     SnapshotCreateEvent event{new Snapshot{}};
     this->emit_event("snapshot_create", event);
-    this->history.emplace_front(event.snapshot);
+    this->_history.emplace_front(event.snapshot);
     return event.snapshot;
 }
 
-void Application::rollbackToSnapshot(const history_t::iterator& snapshot) {
-    this->history.erase(this->history.begin(), snapshot);
+void Application::rollbackToSnapshot(history_t::const_iterator snapshot) {
+    if (snapshot == this->_history.end()) {
+        //TODO: throw an exception;
+        return;
+    }
     SnapshotRestoreEvent event{*snapshot};
     this->emit_event("snapshot_restore", event);
+    this->_history.erase(this->_history.begin(), snapshot++);
+}
+
+const Application::history_t &Application::history() const noexcept {
+    return this->_history;
 }

@@ -34,14 +34,14 @@ protected:
     QApplication* qApplication;
     MainWindow* mainWindow;
     std::set<ITool*> registeredTools;
-    history_t history;
+    history_t _history;
 public:
     Application(QApplication* qApplication);
     Application(const Application&) = delete;
     virtual ~Application();
 public:
     const Snapshot* makeSnapshot();
-    void rollbackToSnapshot(const history_t::iterator& snapshot);
+    void rollbackToSnapshot(history_t::const_iterator snapshot);
 public:
     Application& registerTool(ITool* tool) noexcept;
 public:
@@ -49,6 +49,7 @@ public:
     int exec();
 public:
     MainWindow& getMainWindow() const;
+    const history_t& history() const noexcept;
 };
 
 
