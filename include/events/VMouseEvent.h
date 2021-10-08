@@ -24,7 +24,7 @@
 class VMouseEvent: public VEvent, public QMouseEvent {
 public:
     VMouseEvent(const QMouseEvent& qevent, Viewport* origin) noexcept: VEvent(origin), QMouseEvent(qevent) {}
-    VMouseEvent(const VMouseEvent& reference): VEvent(reference), QMouseEvent(reference) {}
+    VMouseEvent(const VMouseEvent& reference) noexcept: VEvent(reference), QMouseEvent(reference) {}
     ~VMouseEvent() override = default;
 };
 

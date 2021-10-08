@@ -24,7 +24,7 @@
 class VKeyEvent: public VEvent, public QKeyEvent {
 public:
     VKeyEvent(const QKeyEvent& qevent, Viewport* origin) noexcept: VEvent(origin), QKeyEvent(qevent) {}
-    VKeyEvent(const VKeyEvent& reference): VEvent(reference), QKeyEvent(reference) {}
+    VKeyEvent(const VKeyEvent& reference) noexcept: VEvent(reference), QKeyEvent(reference) {}
     ~VKeyEvent() override = default;
 };
 

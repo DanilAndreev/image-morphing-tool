@@ -26,7 +26,7 @@
 class VPaintEvent: public VEvent, public QPaintEvent {
 public:
     VPaintEvent(const QPaintEvent& qevent, Viewport* origin) noexcept: VEvent(origin), QPaintEvent(qevent) {}
-    VPaintEvent(const VPaintEvent& reference): VEvent(reference), QPaintEvent(reference) {}
+    VPaintEvent(const VPaintEvent& reference) noexcept: VEvent(reference), QPaintEvent(reference) {}
     ~VPaintEvent() override = default;
 };
 

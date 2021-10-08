@@ -18,6 +18,8 @@
 
 #include <QApplication>
 
+#include "events/SnapshotCreateEvent.h"
+#include "events/SnapshotRestoreEvent.h"
 
 Application::Application(int argc, char *argv[]): registeredTools{} {
     this->qApplication = new QApplication{argc, argv};
@@ -40,6 +42,9 @@ Application::~Application() {
     }
     delete this->qApplication;
     delete this->mainWindow;
+    for (const auto& snapshot : this->history) {
+        delete snapshot;
+    }
 }
 
 Application &Application::registerTool(ITool *tool) noexcept {
@@ -50,4 +55,17 @@ Application &Application::registerTool(ITool *tool) noexcept {
 
 MainWindow& Application::getMainWindow() const {
     return *mainWindow;
+}
+
+const Snapshot *Application::makeSnapshot() {
+    SnapshotCreateEvent event{new Snapshot{}};
+    this->emit_event("snapshot_create", event);
+    this->history.emplace_front(event.snapshot);
+    return event.snapshot;
+}
+
+void Application::rollbackToSnapshot(const history_t::iterator& snapshot) {
+    this->history.erase(this->history.begin(), snapshot);
+    SnapshotRestoreEvent event{*snapshot};
+    this->emit_event("snapshot_restore", event);
 }
