@@ -17,12 +17,12 @@
 #ifndef IMAGE_MORPHING_TOOL_MAINWINDOW_H
 #define IMAGE_MORPHING_TOOL_MAINWINDOW_H
 
-#include <QWidget>
+#include <QMainWindow>
 
 #include "Viewport.h"
 #include "ToolBar.h"
 
-class MainWindow : public QWidget {
+class MainWindow : public QMainWindow {
 protected:
     Viewport* viewport;
     ToolBar* toolBar;

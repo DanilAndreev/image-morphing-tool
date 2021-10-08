@@ -26,6 +26,14 @@ int main(int argc, char *argv[]) {
         auto curveMorphingTool = new CurveMorphingTool{};
         app.registerTool(curveMorphingTool);
         app.showGUI();
+
+
+//        QApplication app{argc, argv};
+//        MainWindow wind;
+//        wind.show();
+//        app.exec();
+
+
         int code = app.exec();
         delete curveMorphingTool;
         return code;
