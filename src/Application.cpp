@@ -21,8 +21,7 @@
 #include "events/SnapshotCreateEvent.h"
 #include "events/SnapshotRestoreEvent.h"
 
-Application::Application(int argc, char *argv[]): registeredTools{} {
-    this->qApplication = new QApplication{argc, argv};
+Application::Application(QApplication* qApplication): registeredTools{}, qApplication(qApplication) {
     this->mainWindow = new MainWindow{};
 }
 
@@ -40,7 +39,6 @@ Application::~Application() {
     for (ITool* tool : this->registeredTools) {
         tool->uninitialize(this);
     }
-    delete this->qApplication;
     delete this->mainWindow;
     for (const auto& snapshot : this->history) {
         delete snapshot;

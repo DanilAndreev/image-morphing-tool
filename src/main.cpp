@@ -22,18 +22,12 @@
 
 int main(int argc, char *argv[]) {
     try {
-        Application app{argc, argv};
+        QApplication qapp{argc, argv};
+
+        Application app{&qapp};
         auto curveMorphingTool = new CurveMorphingTool{};
         app.registerTool(curveMorphingTool);
         app.showGUI();
-
-
-//        QApplication app{argc, argv};
-//        MainWindow wind;
-//        wind.show();
-//        app.exec();
-
-
         int code = app.exec();
         delete curveMorphingTool;
         return code;

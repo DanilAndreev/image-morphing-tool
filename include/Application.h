@@ -36,7 +36,7 @@ protected:
     std::set<ITool*> registeredTools;
     history_t history;
 public:
-    Application(int argc, char *argv[]);
+    Application(QApplication* qApplication);
     Application(const Application&) = delete;
     virtual ~Application();
 public:
