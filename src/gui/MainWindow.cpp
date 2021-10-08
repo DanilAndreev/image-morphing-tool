@@ -23,7 +23,7 @@
 #include <QApplication>
 
 
-MainWindow::MainWindow(QWidget *parent) noexcept: QMainWindow(parent) {
+MainWindow::MainWindow(Application* application, QWidget *parent) noexcept: QMainWindow(parent), application(application) {
     this->viewport = new Viewport(this);
     this->toolBar = new ToolBar(this);
 
@@ -34,7 +34,8 @@ MainWindow::MainWindow(QWidget *parent) noexcept: QMainWindow(parent) {
 
     QAction *undoAction = new QAction("&Undo", this);
     undoAction->setShortcut(tr("CTRL+Z"));
-    connect(undoAction, &QAction::triggered, qApp, [](){
+    connect(undoAction, &QAction::triggered, qApp, [application](){
+        //TODO: add connections.
         qDebug() << "Undo";
     });
 

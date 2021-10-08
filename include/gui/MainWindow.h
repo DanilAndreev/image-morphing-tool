@@ -22,12 +22,15 @@
 #include "Viewport.h"
 #include "ToolBar.h"
 
+class Application;
+
 class MainWindow : public QMainWindow {
 protected:
     Viewport* viewport;
     ToolBar* toolBar;
+    Application* application;
 public:
-    MainWindow(QWidget* parent = nullptr) noexcept;
+    MainWindow(Application* application, QWidget* parent = nullptr) noexcept;
     ~MainWindow() noexcept = default;
 public:
     Viewport *getViewport() const;
