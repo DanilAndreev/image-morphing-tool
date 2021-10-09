@@ -29,6 +29,9 @@
 
 class Application: public events::event_emitter {
 public:
+    static const char* SNAPSHOT_CREATE_EVENT;
+    static const char* SNAPSHOT_RESTORE_EVENT;
+public:
     using history_t = std::list<Snapshot*>;
 protected:
     QApplication* qApplication;

@@ -67,7 +67,7 @@ namespace events {
     public:
         event_emitter() = default;
         ~event_emitter() = default;
-    public:
+    protected:
         /**
          * emit - emits new event and propagates it over the handlers.
          * @param eventName - Event name string.
@@ -82,6 +82,7 @@ namespace events {
             }
         }
 
+    public:
         /**
          * add_listener - binds handler function to event.
          * @param eventName - Event name string.

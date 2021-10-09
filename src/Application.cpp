@@ -21,6 +21,10 @@
 #include "events/SnapshotCreateEvent.h"
 #include "events/SnapshotRestoreEvent.h"
 
+const char* Application::SNAPSHOT_CREATE_EVENT = "snapshot_create";
+const char* Application::SNAPSHOT_RESTORE_EVENT = "snapshot_restore";
+
+
 Application::Application(QApplication* qApplication): registeredTools{}, qApplication(qApplication) {
     this->mainWindow = new MainWindow{this};
 }
@@ -57,7 +61,7 @@ MainWindow& Application::getMainWindow() const {
 
 const Snapshot *Application::makeSnapshot() {
     SnapshotCreateEvent event{new Snapshot{}};
-    this->emit_event("snapshot_create", event);
+    this->emit_event(Application::SNAPSHOT_CREATE_EVENT, event);
     this->_history.emplace_front(event.snapshot);
     return event.snapshot;
 }
@@ -68,7 +72,7 @@ void Application::rollbackToSnapshot(history_t::const_iterator snapshot) {
         return;
     }
     SnapshotRestoreEvent event{*snapshot};
-    this->emit_event("snapshot_restore", event);
+    this->emit_event(Application::SNAPSHOT_RESTORE_EVENT, event);
     this->_history.erase(this->_history.begin(), snapshot++);
 }
 
