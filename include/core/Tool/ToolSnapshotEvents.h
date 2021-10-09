@@ -23,7 +23,7 @@
 #include "events/SnapshotCreateEvent.h"
 #include "events/SnapshotRestoreEvent.h"
 
-class ToolSnapshotEvents : public ITool {
+class ToolSnapshotEvents : public virtual ITool {
     events::event_emitter::event_handler_t eventSnapshotRestoreCallback;
     events::event_emitter::event_handler_t eventSnapshotCreateCallback;
 public:
@@ -34,8 +34,8 @@ protected:
     virtual void snapshotCreateEventHandler(SnapshotCreateEvent& event) {};
     virtual void snapshotRestoreEventHandler(SnapshotRestoreEvent& event) {};
 public:
-    void initialize(Application *application) override;
-    void uninitialize(Application *application) noexcept override;
+    virtual void initialize(Application *application) override;
+    virtual void uninitialize(Application *application) noexcept override;
 };
 
 #endif //IMAGE_MORPHING_TOOL_TOOLSNAPSHOTEVENT_H

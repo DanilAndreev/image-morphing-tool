@@ -19,7 +19,10 @@
 
 
 class Memento {
-
+public:
+    Memento() = default;
+    Memento(const Memento&) = default;
+    virtual ~Memento() = default;
 };
 
 

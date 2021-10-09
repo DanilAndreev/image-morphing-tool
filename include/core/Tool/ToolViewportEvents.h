@@ -24,7 +24,7 @@
 #include "../../events/VPaintEvent.h"
 #include "../../events/VKeyEvent.h"
 
-class ToolViewportEvents : public ITool {
+class ToolViewportEvents : public virtual ITool {
 private:
     events::event_emitter::event_handler_t eventPaintCallback;
 

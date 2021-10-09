@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
 
         Application app{&qapp};
         auto curveMorphingTool = new CurveMorphingTool{};
-        app.registerTool(curveMorphingTool);
+        app.registerTool(static_cast<ITool*>(curveMorphingTool));
         app.showGUI();
         int code = app.exec();
         delete curveMorphingTool;

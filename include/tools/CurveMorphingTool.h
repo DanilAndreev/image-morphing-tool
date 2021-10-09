@@ -24,14 +24,22 @@
 #include <QPainter>
 
 #include "core/Tool/ToolViewportEvents.h"
+#include "core/Tool/ToolSnapshotEvents.h"
 #include "core/Stroke/Stroke.h"
+#include "core/history/Memento.h"
+
+struct CurveMorphingToolMemento : public Memento {
+    Stroke strokeFrom;
+    Stroke strokeTo;
+};
 
 
-class CurveMorphingTool : public ToolViewportEvents {
+class CurveMorphingTool : public ToolViewportEvents, public ToolSnapshotEvents {
 public:
     std::mutex processLock;
     Stroke strokeFrom;
     Stroke strokeTo;
+    Application* _application;
 public:
     std::vector<QPoint> currentStroke;
 public:
@@ -45,6 +53,8 @@ public:
     void mouseMoveEventHandler(VMouseEvent& event) override;
     void mousePressEventHandler(VMouseEvent& event) override;
     void mouseReleaseEventHandler(VMouseEvent& event) override;
+    void snapshotCreateEventHandler(SnapshotCreateEvent &event) override;
+    void snapshotRestoreEventHandler(SnapshotRestoreEvent &event) override;
 public:
     void initialize(Application* application) override;
     void uninitialize(Application* application) noexcept override;

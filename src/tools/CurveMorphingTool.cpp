@@ -25,10 +25,13 @@ CurveMorphingTool::CurveMorphingTool() noexcept: ToolViewportEvents(), displayDi
 
 void CurveMorphingTool::initialize(Application *application) {
     ToolViewportEvents::initialize(application);
+    ToolSnapshotEvents::initialize(application);
+    this->_application = application;
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {
     ToolViewportEvents::uninitialize(application);
+    ToolSnapshotEvents::uninitialize(application);
 }
 
 void CurveMorphingTool::paintEventHandler(VPaintEvent &event) {
@@ -73,6 +76,7 @@ void CurveMorphingTool::mousePressEventHandler(VMouseEvent &event) {
 
 void CurveMorphingTool::mouseReleaseEventHandler(VMouseEvent &event) {
     if (event.button() == Qt::LeftButton && !this->currentStroke.empty()) {
+        this->_application->makeSnapshot();
         Stroke stroke{this->currentStroke};
         StrokeManager manager{&stroke};
         manager.setTargetSize(20).rebuild();
@@ -84,4 +88,19 @@ void CurveMorphingTool::mouseReleaseEventHandler(VMouseEvent &event) {
         this->currentStroke.clear();
         event.queueRepaint();
     }
+}
+
+void CurveMorphingTool::snapshotCreateEventHandler(SnapshotCreateEvent &event) {
+    auto memento = new CurveMorphingToolMemento{};
+    memento->strokeFrom = this->strokeFrom;
+    memento->strokeTo = this->strokeTo;
+    event.snapshot->insert(std::make_pair("curve-morphing-tool", memento));
+    qDebug() << "CMT create snapshot" << Qt::endl;
+}
+
+void CurveMorphingTool::snapshotRestoreEventHandler(SnapshotRestoreEvent &event) {
+    auto memento = dynamic_cast<CurveMorphingToolMemento*>(event.snapshot->at("curve-morphing-tool"));
+    this->strokeFrom = memento->strokeFrom;
+    this->strokeTo = memento->strokeTo;
+    qDebug() << "CMT UNDO" << Qt::endl;
 }

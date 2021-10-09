@@ -37,7 +37,6 @@ MainWindow::MainWindow(Application* application, QWidget *parent) noexcept: QMai
     undoAction->setShortcut(tr("CTRL+Z"));
     connect(undoAction, &QAction::triggered, qApp, [application](){
         application->rollbackToSnapshot(application->history().cbegin());
-        qDebug() << "Undo";
     });
 
     QAction *redoAction = new QAction("&Redo", this);

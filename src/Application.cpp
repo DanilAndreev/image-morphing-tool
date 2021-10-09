@@ -73,7 +73,8 @@ void Application::rollbackToSnapshot(history_t::const_iterator snapshot) {
     }
     SnapshotRestoreEvent event{*snapshot};
     this->emit_event(Application::SNAPSHOT_RESTORE_EVENT, event);
-    this->_history.erase(this->_history.begin(), snapshot++);
+    this->_history.erase(this->_history.cbegin(), ++snapshot);
+    this->mainWindow->getViewport()->update();
 }
 
 const Application::history_t &Application::history() const noexcept {
