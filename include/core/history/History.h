@@ -18,6 +18,7 @@
 #define IMAGE_MORPHING_TOOL_HISTORY_H
 
 #include <list>
+#include <mutex>
 
 #include <event_emitter.h>
 
@@ -34,6 +35,7 @@ public:
     static const char* SNAPSHOT_RESTORE_EVENT;
 private:
     std::size_t _maxLength = 0;
+    std::mutex storageLock;
 protected:
     /// maxLength - maximal history length. If equals 0 - length is unlimited.
     Application* const _application;
