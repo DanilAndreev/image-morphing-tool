@@ -16,9 +16,9 @@
 
 #include "core/history/History.h"
 
+#include "Application.h"
 #include "events/SnapshotRestoreEvent.h"
 #include "events/SnapshotCreateEvent.h"
-#include "Application.h"
 
 const char* History::SNAPSHOT_CREATE_EVENT = "snapshot_create";
 const char* History::SNAPSHOT_RESTORE_EVENT = "snapshot_restore";
@@ -28,7 +28,11 @@ History::History(Application* application): _application(application) {}
 
 History::History(const History &reference): std::list<Snapshot*>(reference), _application(reference._application) {}
 
-History::~History() = default;
+History::~History() {
+    for (const auto& snapshot : *this) {
+        delete snapshot;
+    }
+};
 
 const Snapshot *History::makeSnapshot() {
     SnapshotCreateEvent event{new Snapshot{}};

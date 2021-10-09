@@ -27,11 +27,13 @@ ToolSnapshotEvents::ToolSnapshotEvents() {
 }
 
 void ToolSnapshotEvents::initialize(Application *application) {
-    application->add_listener(Application::SNAPSHOT_CREATE_EVENT, &this->eventSnapshotCreateCallback);
-    application->add_listener(Application::SNAPSHOT_RESTORE_EVENT, &this->eventSnapshotRestoreCallback);
+    History& history = application->history();
+    history.add_listener(History::SNAPSHOT_CREATE_EVENT, &this->eventSnapshotCreateCallback);
+    history.add_listener(History::SNAPSHOT_RESTORE_EVENT, &this->eventSnapshotRestoreCallback);
 }
 
 void ToolSnapshotEvents::uninitialize(Application *application) noexcept {
-    application->remove_listener(Application::SNAPSHOT_CREATE_EVENT, &this->eventSnapshotCreateCallback);
-    application->remove_listener(Application::SNAPSHOT_RESTORE_EVENT, &this->eventSnapshotRestoreCallback);
+    History& history = application->history();
+    history.remove_listener(History::SNAPSHOT_CREATE_EVENT, &this->eventSnapshotCreateCallback);
+    history.remove_listener(History::SNAPSHOT_RESTORE_EVENT, &this->eventSnapshotRestoreCallback);
 }

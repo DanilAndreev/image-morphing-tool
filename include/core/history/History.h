@@ -27,6 +27,8 @@ class Application;
 
 class History : protected std::list<Snapshot*>, public events::event_emitter {
 public:
+    using storage_t = std::list<Snapshot*>;
+public:
     static const char* SNAPSHOT_CREATE_EVENT;
     static const char* SNAPSHOT_RESTORE_EVENT;
 protected:
@@ -38,7 +40,8 @@ public:
     History(const History& reference);
     virtual ~History();
 public:
-
+    using storage_t::cbegin;
+    using storage_t::cend;
 public:
     const Snapshot* makeSnapshot();
     bool rollbackToSnapshot(History::const_iterator snapshot);

@@ -26,33 +26,26 @@
 #include "core/history/Snapshot.h"
 #include "gui/MainWindow.h"
 #include "core/Tool/ITool.h"
+#include "core/history/History.h"
 
 class Application: public events::event_emitter {
-public:
-    static const char* SNAPSHOT_CREATE_EVENT;
-    static const char* SNAPSHOT_RESTORE_EVENT;
-public:
-    using history_t = std::list<Snapshot*>;
 protected:
     QApplication* qApplication;
     MainWindow* mainWindow;
     std::set<ITool*> registeredTools;
-    history_t _history;
+    History _history;
 public:
     Application(QApplication* qApplication);
     Application(const Application&) = delete;
     virtual ~Application();
-public:
-    const Snapshot* makeSnapshot();
-    void rollbackToSnapshot(history_t::const_iterator snapshot);
 public:
     Application& registerTool(ITool* tool) noexcept;
 public:
     Application& showGUI() noexcept;
     int exec();
 public:
-    MainWindow& getMainWindow() const;
-    const history_t& history() const noexcept;
+    [[nodiscard]] MainWindow& getMainWindow() const;
+    [[nodiscard]] History& history() noexcept;
 };
 
 

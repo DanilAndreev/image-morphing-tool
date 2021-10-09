@@ -25,7 +25,7 @@ public:
     const Snapshot *const snapshot;
 public:
     explicit SnapshotRestoreEvent(const Snapshot* snapshot) noexcept:  events::event_base(), snapshot(snapshot) {}
-    SnapshotRestoreEvent(const SnapshotCreateEvent& reference) noexcept: events::event_base(reference), snapshot(reference.snapshot) {}
+    SnapshotRestoreEvent(const SnapshotRestoreEvent& reference) noexcept: events::event_base(reference), snapshot(reference.snapshot) {}
     ~SnapshotRestoreEvent() override = default;
 };
 

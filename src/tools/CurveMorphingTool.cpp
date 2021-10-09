@@ -76,7 +76,7 @@ void CurveMorphingTool::mousePressEventHandler(VMouseEvent &event) {
 
 void CurveMorphingTool::mouseReleaseEventHandler(VMouseEvent &event) {
     if (event.button() == Qt::LeftButton && !this->currentStroke.empty()) {
-        this->_application->makeSnapshot();
+        this->_application->history().makeSnapshot();
         Stroke stroke{this->currentStroke};
         StrokeManager manager{&stroke};
         manager.setTargetSize(20).rebuild();
