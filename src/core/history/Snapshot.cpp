@@ -22,4 +22,5 @@ Snapshot::~Snapshot() {
     for (const auto &item : *this) {
         delete item.second;
     }
+    qDebug() << "Snaopshot destr" << Qt::endl;
 }

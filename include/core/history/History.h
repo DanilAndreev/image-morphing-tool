@@ -30,11 +30,15 @@ public:
     using storage_t = std::list<Snapshot*>;
 public:
     static const char* SNAPSHOT_CREATE_EVENT;
+    static const char* SNAPSHOT_CREATED_EVENT;
     static const char* SNAPSHOT_RESTORE_EVENT;
+private:
+    std::size_t _maxLength = 0;
 protected:
     /// maxLength - maximal history length. If equals 0 - length is unlimited.
-    std::size_t maxLength = 0;
     Application* const _application;
+    /// _position - current active snapshot. If 0 - then current state is forward than first snapshot.
+    std::size_t _position;
 public:
     History(Application* application);
     History(const History& reference);
@@ -42,9 +46,17 @@ public:
 public:
     using storage_t::cbegin;
     using storage_t::cend;
+    using storage_t::size;
+public:
+    void setMaxLength(const std::size_t& length) noexcept;
+    [[nodiscard]] std::size_t maxLength() const noexcept;
 public:
     const Snapshot* makeSnapshot();
-    bool rollbackToSnapshot(History::const_iterator snapshot);
+    bool moveToSnapshot(std::size_t position);
+    bool undo();
+    bool redo();
+private:
+    static inline History::const_iterator moveIterator(History::const_iterator iter, std::size_t shift, bool forward = true) noexcept;
 };
 
 

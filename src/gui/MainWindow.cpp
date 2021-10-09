@@ -36,11 +36,14 @@ MainWindow::MainWindow(Application* application, QWidget *parent) noexcept: QMai
     QAction *undoAction = new QAction("&Undo", this);
     undoAction->setShortcut(tr("CTRL+Z"));
     connect(undoAction, &QAction::triggered, qApp, [application](){
-        application->history().rollbackToSnapshot(application->history().cbegin());
+        application->history().undo();
     });
 
     QAction *redoAction = new QAction("&Redo", this);
     redoAction->setShortcut(tr("CTRL+SHIFT+Z"));
+    connect(redoAction, &QAction::triggered, qApp, [application](){
+        application->history().redo();
+    });
 
 
     QMenu *fileMenu = menuBar()->addMenu("&File");
