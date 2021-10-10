@@ -24,7 +24,8 @@
 
 #include "Application.h"
 
-MainWindow::MainWindow(Application* application, QWidget *parent) noexcept: QMainWindow(parent), application(application) {
+MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMainWindow(parent),
+                                                                            application(application) {
     this->viewport = new Viewport(this);
     this->toolBar = new ToolBar(this);
 
@@ -35,13 +36,13 @@ MainWindow::MainWindow(Application* application, QWidget *parent) noexcept: QMai
 
     QAction *undoAction = new QAction("&Undo", this);
     undoAction->setShortcut(tr("CTRL+Z"));
-    connect(undoAction, &QAction::triggered, qApp, [application](){
+    connect(undoAction, &QAction::triggered, qApp, [application]() {
         application->history().undo();
     });
 
     QAction *redoAction = new QAction("&Redo", this);
     redoAction->setShortcut(tr("CTRL+SHIFT+Z"));
-    connect(redoAction, &QAction::triggered, qApp, [application](){
+    connect(redoAction, &QAction::triggered, qApp, [application]() {
         application->history().redo();
     });
 
@@ -52,10 +53,13 @@ MainWindow::MainWindow(Application* application, QWidget *parent) noexcept: QMai
     fileMenu->addAction(redoAction);
 
 
-    QBoxLayout* layout = new QBoxLayout(QBoxLayout::Direction::LeftToRight, this->centralWidget());
+    QBoxLayout *layout = new QBoxLayout(QBoxLayout::Direction::LeftToRight, this->centralWidget());
     layout->addWidget(this->toolBar);
     layout->addWidget(this->viewport);
     this->centralWidget()->setLayout(layout);
+
+    this->centralWidget()->layout()->setContentsMargins({0, 0, 0, 0});
+//    this->centralWidget()->setStyleSheet("background: #f0f;");
 }
 
 Viewport *MainWindow::getViewport() const {
