@@ -95,12 +95,10 @@ void CurveMorphingTool::snapshotCreateEventHandler(SnapshotCreateEvent &event) {
     memento->strokeFrom = this->strokeFrom;
     memento->strokeTo = this->strokeTo;
     event.snapshot->insert(std::make_pair("curve-morphing-tool", memento));
-    qDebug() << "CMT create snapshot" << Qt::endl;
 }
 
 void CurveMorphingTool::snapshotRestoreEventHandler(SnapshotRestoreEvent &event) {
     auto memento = dynamic_cast<CurveMorphingToolMemento*>(event.snapshot->at("curve-morphing-tool"));
     this->strokeFrom = memento->strokeFrom;
     this->strokeTo = memento->strokeTo;
-    qDebug() << "CMT UNDO" << Qt::endl;
 }
