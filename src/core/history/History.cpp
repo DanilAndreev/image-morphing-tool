@@ -35,9 +35,7 @@ History::History(const History &ref) :
         storageLock() {}
 
 History::~History() {
-    for (const auto &snapshot: *this) {
-        delete snapshot;
-    }
+    this->eraseAndFree(this->cbegin(), this->cend());
 };
 
 const Snapshot *History::makeSnapshot() {
@@ -47,7 +45,7 @@ const Snapshot *History::makeSnapshot() {
     }
     SnapshotCreateEvent createEvent{new Snapshot{}};
     this->emit_event(History::SNAPSHOT_CREATE_EVENT, createEvent);
-    this->erase(this->cbegin(), History::moveIterator(this->cbegin(), this->_position)); //TODO: free snapshots memory.
+    this->eraseAndFree(this->cbegin(), History::moveIterator(this->cbegin(), this->_position));
     this->emplace_front(createEvent.snapshot);
     this->_position = 0;
     SnapshotCreatedEvent createdEvent{createEvent.snapshot};
@@ -71,7 +69,7 @@ bool History::moveToSnapshot(std::size_t position) {
 bool History::undo() {
     std::size_t increment = 1;
     if (!this->_position) {
-        this->makeSnapshot();
+        this->makeSnapshot(); //TODO: move this logic to History::moveToSnapshot()
         ++increment;
     }
     return this->moveToSnapshot(this->_position + increment);
@@ -81,15 +79,9 @@ bool History::redo() {
     return this->moveToSnapshot(this->_position - 1);
 }
 
-History::const_iterator History::moveIterator(History::const_iterator iter, std::size_t shift, bool forward) noexcept {
-    if (forward) {
-        for (std::size_t i = 0; i < shift; i++) {
-            ++iter;
-        }
-    } else {
-        for (std::size_t i = 0; i < shift; i++) {
-            --iter;
-        }
+History::const_iterator History::moveIterator(History::const_iterator iter, std::size_t shift) noexcept {
+    for (std::size_t i = 0; i < shift; i++) {
+        ++iter;
     }
     return iter;
 }
@@ -102,4 +94,16 @@ void History::setMaxLength(const std::size_t &length) noexcept {
 
 std::size_t History::maxLength() const noexcept {
     return this->_maxLength ? this->_maxLength - 1 : 0;
+}
+
+void History::eraseAndFree(const History::const_iterator &begin, const History::const_iterator &end) noexcept {
+    for (auto it = begin; it != end; ++it) {
+        try {
+            delete *it;
+        } catch (std::exception &e) {
+            qDebug() << "An error occurred while deleting history snapshot item: " << e.what() << Qt::endl;
+            //TODO: handle;
+        }
+    }
+    this->erase(begin, end);
 }
