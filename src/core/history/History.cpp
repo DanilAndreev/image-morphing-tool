@@ -57,6 +57,7 @@ const Snapshot *History::makeSnapshot() {
 bool History::moveToSnapshot(std::size_t position) {
     if (position == 0) return false;
     if (position > this->size()) return false;
+    if (!this->_position) this->makeSnapshot();
     this->storageLock.lock();
     this->_position = position;
     SnapshotRestoreEvent event{*History::moveIterator(this->cbegin(), --position)};
@@ -68,10 +69,7 @@ bool History::moveToSnapshot(std::size_t position) {
 
 bool History::undo() {
     std::size_t increment = 1;
-    if (!this->_position) {
-        this->makeSnapshot(); //TODO: move this logic to History::moveToSnapshot()
-        ++increment;
-    }
+    if (!this->_position) ++increment;
     return this->moveToSnapshot(this->_position + increment);
 }
 
