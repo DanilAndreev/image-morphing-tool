@@ -18,6 +18,7 @@
 
 #include <QBoxLayout>
 #include <QPushButton>
+#include <QVariant>
 
 ToolBar::ToolBar(QWidget *parent): QWidget(parent) {
     QPushButton* button1 = new QPushButton();
@@ -34,5 +35,5 @@ ToolBar::ToolBar(QWidget *parent): QWidget(parent) {
     this->setLayout(layout);
 
     this->setMaximumWidth(32);
-    this->setStyleSheet("border-right: 1px");
+    this->setProperty("qssClass", "ToolBar");
 }

@@ -1,0 +1,25 @@
+*[qssClass~="MainWindowCentral"] {
+    background: #4c4c4c;
+    color: #fff;
+}
+
+*[qssClass~="MainWindowMenu"] {
+    background: #4c4c4c;
+    color: #bbbbbb;
+    border-bottom: 1px solid #424242;
+}
+
+*[qssClass~="ToolBar"] QPushButton {
+    background: #4c4c4c;
+    padding: 0;
+    margin: 0;
+}
+
+*[qssClass~="ToolBar"] {
+    border-right: 1px solid #424242;
+    padding: 10px 1px 1px 1px;
+}
+
+*[qssClass~="Viewport"] {
+    background: #fff;
+}

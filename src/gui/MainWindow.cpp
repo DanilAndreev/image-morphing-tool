@@ -23,6 +23,7 @@
 #include <QApplication>
 
 #include "Application.h"
+#include "core/utils.h"
 
 MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMainWindow(parent),
                                                                             application(application) {
@@ -47,7 +48,7 @@ MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMai
     });
 
 
-    QMenu *fileMenu = menuBar()->addMenu("&File");
+    QMenu *fileMenu = this->menuBar()->addMenu("&File");
     fileMenu->addAction(quitAction);
     fileMenu->addAction(undoAction);
     fileMenu->addAction(redoAction);
@@ -56,10 +57,21 @@ MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMai
     QBoxLayout *layout = new QBoxLayout(QBoxLayout::Direction::LeftToRight, this->centralWidget());
     layout->addWidget(this->toolBar);
     layout->addWidget(this->viewport);
+    layout->setContentsMargins({0, 0, 0, 0});
+    layout->setSpacing(0);
     this->centralWidget()->setLayout(layout);
 
-    this->centralWidget()->layout()->setContentsMargins({0, 0, 0, 0});
-//    this->centralWidget()->setStyleSheet("background: #f0f;");
+
+    this->centralWidget()->setProperty("qssClass", "MainWindowCentral");
+    this->menuWidget()->setProperty("qssClass", "MainWindowMenu");
+    this->setProperty("qssClass", "MainWindow");
+
+    try {
+        std::string stylesheet = textFromFile("style/style.qss"); //TODO: handle errors
+        this->setStyleSheet(stylesheet.c_str());
+    } catch (std::exception& error) {
+        qDebug() << error.what() << Qt::endl;
+    }
 }
 
 Viewport *MainWindow::getViewport() const {

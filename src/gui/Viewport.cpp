@@ -15,6 +15,9 @@
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
 #include "gui/Viewport.h"
+
+#include <QVariant>
+
 #include "core/Stroke/StrokeDrawer.h"
 #include "core/Stroke/StrokeManager.h"
 
@@ -34,7 +37,9 @@ const char *Viewport::KEY_PRESS_EVENT = "key_press";
 const char *Viewport::KEY_RELEASE_EVENT = "key_release";
 
 
-Viewport::Viewport(QWidget *parent) : QWidget(parent) {}
+Viewport::Viewport(QWidget *parent) : QWidget(parent) {
+    this->setProperty("qssClass", "Viewport");
+}
 
 void Viewport::drawLines(QPainter &painter) {
     QPen pen(Qt::black, 2, Qt::SolidLine);
