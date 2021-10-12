@@ -29,6 +29,7 @@ MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMai
                                                                             application(application) {
     this->viewport = new Viewport(this);
     this->toolBar = new ToolBar(this);
+    BottomLineWidget* bottomLineWidget = new BottomLineWidget{application, this};
 
     this->setCentralWidget(new QWidget{});
 
@@ -39,12 +40,14 @@ MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMai
     undoAction->setShortcut(tr("CTRL+Z"));
     connect(undoAction, &QAction::triggered, qApp, [application]() {
         application->history().undo();
+        application->log("Undo", LogEvent::LOG_LEVEL::WARNING);
     });
 
     QAction *redoAction = new QAction("&Redo", this);
     redoAction->setShortcut(tr("CTRL+SHIFT+Z"));
     connect(redoAction, &QAction::triggered, qApp, [application]() {
         application->history().redo();
+        application->log("Redo", LogEvent::LOG_LEVEL::INFO);
     });
 
 
@@ -54,13 +57,19 @@ MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMai
     fileMenu->addAction(redoAction);
 
 
-    QBoxLayout *layout = new QBoxLayout(QBoxLayout::Direction::LeftToRight, this->centralWidget());
-    layout->addWidget(this->toolBar);
-    layout->addWidget(this->viewport);
-    layout->setContentsMargins({0, 0, 0, 0});
-    layout->setSpacing(0);
-    this->centralWidget()->setLayout(layout);
+    QWidget* rightWidget = new QWidget(this->centralWidget());
+    QBoxLayout *horizontalLayout = new QBoxLayout(QBoxLayout::Direction::LeftToRight, this->centralWidget());
+    horizontalLayout->addWidget(this->toolBar);
+    horizontalLayout->addWidget(rightWidget);
+    horizontalLayout->setContentsMargins({0, 0, 0, 0});
+    horizontalLayout->setSpacing(0);
+    this->centralWidget()->setLayout(horizontalLayout);
 
+    QBoxLayout* verticalLayout = new QBoxLayout(QBoxLayout::Direction::TopToBottom);
+    verticalLayout->addWidget(this->viewport);
+    verticalLayout->addWidget(bottomLineWidget);
+    verticalLayout->setContentsMargins({0, 0, 0, 0});
+    rightWidget->setLayout(verticalLayout);
 
     this->centralWidget()->setProperty("qssClass", "MainWindowCentral");
     this->menuWidget()->setProperty("qssClass", "MainWindowMenu");

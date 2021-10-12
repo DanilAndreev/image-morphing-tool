@@ -18,6 +18,8 @@
 
 #include <QApplication>
 
+const char* Application::LOG_EVENT = "log";
+
 Application::Application(QApplication* qApplication): registeredTools{}, qApplication(qApplication), _history(this) {
     this->mainWindow = new MainWindow{this};
 }
@@ -51,4 +53,9 @@ MainWindow& Application::getMainWindow() const {
 
 History &Application::history() noexcept {
     return this->_history;
+}
+
+void Application::log(const QString &message, LogEvent::LOG_LEVEL level) {
+    LogEvent event{message, level};
+    this->emit_event(Application::LOG_EVENT, event);
 }

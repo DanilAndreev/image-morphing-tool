@@ -27,19 +27,24 @@
 #include "gui/MainWindow.h"
 #include "core/Tool/ITool.h"
 #include "core/history/History.h"
+#include "events/LogEvent.h"
 
 class Application: public events::event_emitter {
+public:
+    static const char* LOG_EVENT;
 protected:
     QApplication* qApplication;
     MainWindow* mainWindow;
     std::set<ITool*> registeredTools;
     History _history;
 public:
-    Application(QApplication* qApplication);
+    explicit Application(QApplication* qApplication);
     Application(const Application&) = delete;
     virtual ~Application();
 public:
     Application& registerTool(ITool* tool) noexcept;
+public:
+    void log(const QString& message, LogEvent::LOG_LEVEL level);
 public:
     Application& showGUI() noexcept;
     int exec();

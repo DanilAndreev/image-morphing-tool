@@ -21,6 +21,7 @@
 
 #include "Viewport.h"
 #include "ToolBar.h"
+#include "BottomLineWidget.h"
 
 class Application;
 

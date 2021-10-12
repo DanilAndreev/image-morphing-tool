@@ -17,12 +17,33 @@
 #ifndef IMAGE_MORPHING_TOOL_LASTLOGMESSAGEWIDGET_H
 #define IMAGE_MORPHING_TOOL_LASTLOGMESSAGEWIDGET_H
 
-#include <QWidget>
+#include <QLineEdit>
+#include <QString>
+#include <event_emitter.h>
 
-class LastLogMessageWidget : QWidget {
+#include "events/LogEvent.h"
+
+class Application;
+
+class LastLogMessageWidget : public QLineEdit {
+private:
+    static const char* BACKGROUND_FATAL_ERROR_STYLE;
+    static const char* BACKGROUND_ERROR_STYLE;
+    static const char* BACKGROUND_WARNING_STYLE;
+    static const char* BACKGROUND_INFO_STYLE;
+private:
+    events::event_emitter::event_handler_t eventSnapshotCreateCallback;
+protected:
+    Application* _application;
+    QString _message;
+    LogEvent::LOG_LEVEL _level;
 public:
-    explicit LastLogMessageWidget(QWidget* parent = nullptr);
+    explicit LastLogMessageWidget(Application* application, QWidget* parent = nullptr);
     ~LastLogMessageWidget() override;
+public:
+    void handleLogEvent(LogEvent& event) noexcept;
+private:
+    inline void appendStylesheet(const char* stylesheet) noexcept;
 };
 
 
