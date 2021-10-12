@@ -27,14 +27,14 @@ const char* LastLogMessageWidget::BACKGROUND_INFO_STYLE = "background: none;";
 LastLogMessageWidget::LastLogMessageWidget(Application *application, QWidget *parent)
         : QLineEdit(parent), _application(application) {
     this->setReadOnly(true);
-    this->eventSnapshotCreateCallback = [this](events::event_base &event) {
+    this->eventLogCallback = [this](events::event_base &event) {
         this->handleLogEvent(dynamic_cast<LogEvent &>(event));
     };
-    this->_application->add_listener(Application::LOG_EVENT, &this->eventSnapshotCreateCallback);
+    this->_application->add_listener(Application::LOG_EVENT, &this->eventLogCallback);
 }
 
 LastLogMessageWidget::~LastLogMessageWidget() {
-    this->_application->remove_listener(Application::LOG_EVENT, &this->eventSnapshotCreateCallback);
+    this->_application->remove_listener(Application::LOG_EVENT, &this->eventLogCallback);
 }
 
 void LastLogMessageWidget::handleLogEvent(LogEvent &event) noexcept {

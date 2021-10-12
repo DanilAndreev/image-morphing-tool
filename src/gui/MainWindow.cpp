@@ -29,6 +29,7 @@ MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMai
                                                                             application(application) {
     this->viewport = new Viewport(this);
     this->toolBar = new ToolBar(this);
+    this->logWindow = new LogWindow(application);
     BottomLineWidget* bottomLineWidget = new BottomLineWidget{application, this};
 
     this->setCentralWidget(new QWidget{});
@@ -39,15 +40,21 @@ MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMai
     QAction *undoAction = new QAction("&Undo", this);
     undoAction->setShortcut(tr("CTRL+Z"));
     connect(undoAction, &QAction::triggered, qApp, [application]() {
-        application->history().undo();
-        application->log("Undo", LogEvent::LOG_LEVEL::WARNING);
+        if (application->history().undo()) {
+            application->log("Undo", LogEvent::LOG_LEVEL::INFO);
+        } else {
+            application->log("Nothing to undo.", LogEvent::LOG_LEVEL::WARNING);
+        }
     });
 
     QAction *redoAction = new QAction("&Redo", this);
     redoAction->setShortcut(tr("CTRL+SHIFT+Z"));
     connect(redoAction, &QAction::triggered, qApp, [application]() {
-        application->history().redo();
-        application->log("Redo", LogEvent::LOG_LEVEL::INFO);
+        if (application->history().redo()) {
+            application->log("Redo", LogEvent::LOG_LEVEL::INFO);
+        } else {
+            application->log("Nothing to redo.", LogEvent::LOG_LEVEL::WARNING);
+        };
     });
 
 
@@ -84,9 +91,13 @@ MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMai
 }
 
 Viewport *MainWindow::getViewport() const {
-    return viewport;
+    return this->viewport;
 }
 
 ToolBar *MainWindow::getToolBar() const {
-    return toolBar;
+    return this->toolBar;
+}
+
+LogWindow *MainWindow::getLogWindow() const {
+    return this->logWindow;
 }

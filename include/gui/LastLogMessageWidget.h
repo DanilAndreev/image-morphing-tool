@@ -32,7 +32,7 @@ private:
     static const char* BACKGROUND_WARNING_STYLE;
     static const char* BACKGROUND_INFO_STYLE;
 private:
-    events::event_emitter::event_handler_t eventSnapshotCreateCallback;
+    events::event_emitter::event_handler_t eventLogCallback;
 protected:
     Application* _application;
     QString _message;
@@ -40,8 +40,8 @@ protected:
 public:
     explicit LastLogMessageWidget(Application* application, QWidget* parent = nullptr);
     ~LastLogMessageWidget() override;
-public:
-    void handleLogEvent(LogEvent& event) noexcept;
+protected:
+    virtual void handleLogEvent(LogEvent& event) noexcept;
 private:
     inline void appendStylesheet(const char* stylesheet) noexcept;
 };

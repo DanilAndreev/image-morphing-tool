@@ -18,12 +18,18 @@
 
 #include <QBoxLayout>
 #include <QPushButton>
+#include <QApplication>
+
 #include "gui/LastLogMessageWidget.h"
+#include "Application.h"
 
 BottomLineWidget::BottomLineWidget(Application* application, QWidget *parent) : QWidget(parent), _application(application) {
     QBoxLayout* layout = new QBoxLayout(QBoxLayout::Direction::LeftToRight);
     LastLogMessageWidget* lastLogMessageWidget = new LastLogMessageWidget(application, this);
     QPushButton* button = new QPushButton{};
+    connect(button, &QPushButton::clicked, qApp, [application](){
+        application->getMainWindow().getLogWindow()->show();
+    });
     button->setContentsMargins({1, 1, 1, 1});
     button->setText("terminal");
 

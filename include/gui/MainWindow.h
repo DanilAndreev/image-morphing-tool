@@ -22,6 +22,7 @@
 #include "Viewport.h"
 #include "ToolBar.h"
 #include "BottomLineWidget.h"
+#include "gui/LogWindow.h"
 
 class Application;
 
@@ -30,12 +31,14 @@ protected:
     Viewport* viewport;
     ToolBar* toolBar;
     Application* application;
+    LogWindow* logWindow;
 public:
     explicit MainWindow(Application* application, QWidget* parent = nullptr) noexcept;
     ~MainWindow() noexcept override = default;
 public:
     [[nodiscard]] Viewport *getViewport() const;
     [[nodiscard]] ToolBar *getToolBar() const;
+    [[nodiscard]] LogWindow *getLogWindow() const;
 };
 
 
