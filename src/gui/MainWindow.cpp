@@ -101,3 +101,7 @@ ToolBar *MainWindow::getToolBar() const {
 LogWindow *MainWindow::getLogWindow() const {
     return this->logWindow;
 }
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+    qApp->quit();
+}

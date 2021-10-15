@@ -18,6 +18,7 @@
 #define IMAGE_MORPHING_TOOL_MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QCloseEvent>
 
 #include "Viewport.h"
 #include "ToolBar.h"
@@ -35,6 +36,8 @@ protected:
 public:
     explicit MainWindow(Application* application, QWidget* parent = nullptr) noexcept;
     ~MainWindow() noexcept override = default;
+protected:
+    void closeEvent(QCloseEvent *event) override;
 public:
     [[nodiscard]] Viewport *getViewport() const;
     [[nodiscard]] ToolBar *getToolBar() const;

@@ -24,11 +24,11 @@ int main(int argc, char *argv[]) {
     try {
         QApplication qapp{argc, argv};
 
-        Application app{&qapp};
+        Application* app = new Application{&qapp};
         auto curveMorphingTool = new CurveMorphingTool{};
-        app.registerTool(static_cast<ITool*>(curveMorphingTool));
-        app.showGUI();
-        int code = app.exec();
+        app->registerTool(static_cast<ITool*>(curveMorphingTool));
+        app->showGUI();
+        int code = app->exec();
         delete curveMorphingTool;
         return code;
     } catch (const std::exception& error) {
