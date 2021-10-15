@@ -59,6 +59,7 @@ MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMai
 
 
     QMenu *fileMenu = this->menuBar()->addMenu("&File");
+    fileMenu->setProperty("qssClass", "MenuList MainWindowFileMenu");
     fileMenu->addAction(quitAction);
     fileMenu->addAction(undoAction);
     fileMenu->addAction(redoAction);

@@ -9,6 +9,12 @@
     border-bottom: 1px solid #424242;
 }
 
+*[qssClass~="MainWindowFileMenu"] {
+    background: #4c4c4c;
+    color: #bbbbbb;
+    border: 1px solid #424242;
+}
+
 *[qssClass~="ToolBar"] QPushButton {
     background: #4c4c4c;
     padding: 0;
