@@ -42,7 +42,7 @@ const char *Viewport::KEY_RELEASE_EVENT = "key_release";
 
 Viewport::Viewport(Application* application, QWidget *parent) : QScrollArea(parent), _application(application) {
     this->setProperty("qssClass", "Viewport");
-    this->_canvas = new Canvas{application, parent};
+    this->_canvas = new Canvas{application, this};
     this->setWidget(this->_canvas);
 }
 
