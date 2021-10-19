@@ -50,30 +50,40 @@ void Viewport::paintEvent(QPaintEvent *event) noexcept {
     VPaintEvent vEvent{*event, this};
     this->emit_event(Viewport::PAINT_EVENT, vEvent);
     QAbstractScrollArea::paintEvent(event);
-    if (vEvent.repaintQueued()) this->repaint();
+    if (vEvent.repaintQueued()) {
+        this->repaint();
+        this->canvas()->repaint();
+    }
 }
 
 void Viewport::mouseMoveEvent(QMouseEvent *event) noexcept {
     VMouseEvent vEvent{*event, this};
     this->emit_event(Viewport::MOUSE_MOVE_EVENT, vEvent);
     QAbstractScrollArea::mouseMoveEvent(event);
-    if (vEvent.repaintQueued())
+    if (vEvent.repaintQueued()) {
         this->repaint();
+        this->canvas()->repaint();
+    }
 }
 
 void Viewport::mousePressEvent(QMouseEvent *event) noexcept {
     VMouseEvent vEvent{*event, this};
     this->emit_event(Viewport::MOUSE_PRESS_EVENT, vEvent);
     QAbstractScrollArea::mousePressEvent(event);
-    if (vEvent.repaintQueued()) this->repaint();
+    if (vEvent.repaintQueued()) {
+        this->repaint();
+        this->canvas()->repaint();
+    }
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent *event) noexcept {
     VMouseEvent vEvent{*event, this};
     this->emit_event(Viewport::MOUSE_RELEASE_EVENT, vEvent);
     QAbstractScrollArea::mouseReleaseEvent(event);
-    if (vEvent.repaintQueued()) //TODO: repaint canvas.
+    if (vEvent.repaintQueued()) {
         this->repaint();
+        this->canvas()->repaint();
+    } //TODO: repaint canvas. (Think about correctness)
 }
 
 Canvas *Viewport::canvas() noexcept {

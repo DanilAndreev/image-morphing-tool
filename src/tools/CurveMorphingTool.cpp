@@ -37,26 +37,39 @@ void CurveMorphingTool::uninitialize(Application *application) noexcept {
 }
 
 void CurveMorphingTool::canvasPaintEventHandler(CPaintEvent &event) {
+    QPen redPen = QPen{};
+    redPen.setColor({255, 0, 0});
+    redPen.setWidth(3);
+
+    QPen blackPen = QPen{};
+    blackPen.setColor({0, 0, 0});
+    blackPen.setWidth(3);
+
+    QPen bluePen = QPen{};
+    bluePen.setColor({0, 0, 255});
+    bluePen.setWidth(3);
+
     QPainter painter(event.origin());
     StrokeDrawer drawer{};
-    QPen pen = QPen{};
-    pen.setColor({255, 0, 0});
-    pen.setWidth(3);
-    painter.setPen(pen);
 
     if (!this->strokeFrom.empty()) {
         drawer.bind(&this->strokeFrom);
+        painter.setPen(blackPen);
         drawer.draw(painter);
+        painter.setPen(redPen);
         drawer.drawPoints(painter);
     }
     if (!this->strokeTo.empty()) {
         drawer.bind(&this->strokeTo);
+        painter.setPen(blackPen);
         drawer.draw(painter);
+        painter.setPen(redPen);
         drawer.drawPoints(painter);
     }
     if (!this->currentStroke.empty()) {
         Stroke current = Stroke{this->currentStroke};
         drawer.bind(&current);
+        painter.setPen(bluePen);
         drawer.draw(painter);
     }
     drawer.unbind();
