@@ -25,7 +25,6 @@
 class StrokeDrawer {
 protected:
     const Stroke *stroke;
-    QPen pen;
 public:
     explicit StrokeDrawer(const Stroke *target = nullptr) noexcept;
     StrokeDrawer(const StrokeDrawer &reference) noexcept;

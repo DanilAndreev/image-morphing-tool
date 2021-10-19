@@ -18,14 +18,24 @@
 #define IMAGE_MORPHING_TOOL_CANVAS_H
 
 #include <QWidget>
+#include <events/DocumentRedrawEvent.h>
+#include <event_emitter.h>
 
-class Canvas : public QWidget {
+class Application;
+
+class Canvas : public QWidget, public events::event_emitter {
 public:
-    explicit Canvas(QWidget* parent = nullptr);
+    static const char* PAINT_EVENT;
+private:
+    events::event_emitter::event_handler_t eventDocumentRedrawCallback;
+protected:
+    Application* _application;
+public:
+    explicit Canvas(Application* application, QWidget* parent = nullptr);
     ~Canvas() override;
-public:
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void documentRedrawEventHandler(DocumentRedrawEvent& event);
 };
 
 

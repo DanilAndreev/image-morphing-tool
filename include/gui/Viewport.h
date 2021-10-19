@@ -27,6 +27,8 @@
 #include "core/Stroke/Stroke.h"
 #include "event_emitter.h"
 
+class Application;
+
 class Viewport : public QScrollArea, public events::event_emitter {
 public:
     static const char* PAINT_EVENT;
@@ -42,8 +44,9 @@ public:
     static const char* KEY_RELEASE_EVENT;
 protected:
     Canvas* _canvas;
+    Application* _application;
 public:
-    explicit Viewport(QWidget *parent = nullptr);
+    explicit Viewport(Application* application, QWidget *parent = nullptr);
     Viewport(const Viewport &reference) = delete;
     ~Viewport() override = default;
 public:

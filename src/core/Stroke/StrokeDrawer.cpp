@@ -16,9 +16,7 @@
 
 #include "core/Stroke/StrokeDrawer.h"
 
-StrokeDrawer::StrokeDrawer(const Stroke *target) noexcept: stroke(target) {
-    this->pen = {Qt::black, 2, Qt::SolidLine};
-}
+StrokeDrawer::StrokeDrawer(const Stroke *target) noexcept: stroke(target) {}
 
 StrokeDrawer::StrokeDrawer(const StrokeDrawer &reference) noexcept: stroke(reference.stroke) {}
 
@@ -34,12 +32,9 @@ void StrokeDrawer::draw(QPainter &painter) {
     if (!this->stroke)
         throw Exceptions::NullPointerException{
                 "You have to use 'bind()' method before executing context based operations."};
-    QPen oldPen = painter.pen();
-    painter.setPen(this->pen);
     for (std::size_t i = 1; i < this->stroke->size(); i++) {
         StrokeDrawer::drawLine(painter, this->stroke->at(i - 1), this->stroke->at(i));
     }
-    painter.setPen(oldPen);
 }
 
 void StrokeDrawer::drawLine(QPainter &painter, const QPoint &a, const QPoint &b) {
@@ -50,13 +45,7 @@ void StrokeDrawer::drawPoints(QPainter &painter) {
     if (!this->stroke)
         throw Exceptions::NullPointerException{
         "You have to use 'bind()' method before executing context based operations."};
-    QPen oldPen = painter.pen();
-    QPen penn = QPen{};
-    penn.setColor({255, 0, 0});
-    penn.setWidth(3);
-    painter.setPen(penn);
     for (const QPoint& point : *this->stroke) {
         painter.drawPoint(point);
     }
-    painter.setPen(oldPen);
 }

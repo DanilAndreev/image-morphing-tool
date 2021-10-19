@@ -21,6 +21,7 @@
 const char* Application::LOG_EVENT = "log";
 
 Application::Application(QApplication* qApplication): registeredTools{}, qApplication(qApplication), _history(this) {
+    this->_document = new Document{};
     this->mainWindow = new MainWindow{this};
 }
 
@@ -39,6 +40,7 @@ Application::~Application() {
         tool->uninitialize(this);
     }
     delete this->mainWindow;
+    delete this->_document;
 }
 
 Application &Application::registerTool(ITool *tool) noexcept {
@@ -58,4 +60,8 @@ History &Application::history() noexcept {
 void Application::log(const QString &message, LogEvent::LOG_LEVEL level) {
     LogEvent event{message, level};
     this->emit_event(Application::LOG_EVENT, event);
+}
+
+Document *Application::document() noexcept {
+    return this->_document;
 }

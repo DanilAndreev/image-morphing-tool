@@ -26,17 +26,24 @@ CurveMorphingTool::CurveMorphingTool() noexcept: ToolViewportEvents(), displayDi
 void CurveMorphingTool::initialize(Application *application) {
     ToolViewportEvents::initialize(application);
     ToolSnapshotEvents::initialize(application);
+    ToolCanvasEvents::initialize(application);
     this->_application = application;
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {
     ToolViewportEvents::uninitialize(application);
     ToolSnapshotEvents::uninitialize(application);
+    ToolCanvasEvents::uninitialize(application);
 }
 
-void CurveMorphingTool::paintEventHandler(VPaintEvent &event) {
+void CurveMorphingTool::canvasPaintEventHandler(CPaintEvent &event) {
     QPainter painter(event.origin());
     StrokeDrawer drawer{};
+    QPen pen = QPen{};
+    pen.setColor({255, 0, 0});
+    pen.setWidth(3);
+    painter.setPen(pen);
+
     if (!this->strokeFrom.empty()) {
         drawer.bind(&this->strokeFrom);
         drawer.draw(painter);

@@ -22,6 +22,8 @@
 #include "core/Stroke/StrokeDrawer.h"
 #include "core/Stroke/StrokeManager.h"
 
+#include "Application.h"
+
 #include "events/VPaintEvent.h"
 #include "events/VMouseEvent.h"
 
@@ -38,21 +40,17 @@ const char *Viewport::KEY_PRESS_EVENT = "key_press";
 const char *Viewport::KEY_RELEASE_EVENT = "key_release";
 
 
-Viewport::Viewport(QWidget *parent) : QScrollArea(parent) {
+Viewport::Viewport(Application* application, QWidget *parent) : QScrollArea(parent), _application(application) {
     this->setProperty("qssClass", "Viewport");
-    this->_canvas = new Canvas{parent};
+    this->_canvas = new Canvas{application, parent};
     this->setWidget(this->_canvas);
 }
 
 void Viewport::paintEvent(QPaintEvent *event) noexcept {
-//    QPainter painter(this);
-//    QPaintEngine* e = this->paintEngine();
-//    painter.eraseRect(painter.window());
-//    painter.end();
-//    VPaintEvent vEvent{*event, this};
-//    this->emit_event(Viewport::PAINT_EVENT, vEvent);
-//    QAbstractScrollArea::paintEvent(event);
-//    if (vEvent.repaintQueued()) this->repaint();
+    VPaintEvent vEvent{*event, this};
+    this->emit_event(Viewport::PAINT_EVENT, vEvent);
+    QAbstractScrollArea::paintEvent(event);
+    if (vEvent.repaintQueued()) this->repaint();
 }
 
 void Viewport::mouseMoveEvent(QMouseEvent *event) noexcept {
@@ -74,7 +72,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event) noexcept {
     VMouseEvent vEvent{*event, this};
     this->emit_event(Viewport::MOUSE_RELEASE_EVENT, vEvent);
     QAbstractScrollArea::mouseReleaseEvent(event);
-    if (vEvent.repaintQueued()) this->repaint();
+    if (vEvent.repaintQueued())
+        this->repaint();
 }
 
 Canvas *Viewport::canvas() noexcept {

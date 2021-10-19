@@ -15,15 +15,27 @@
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
 #include "core/drawables/Document.h"
+#include "events/DocumentRedrawEvent.h"
+
+const char* Document::REDRAW_EVENT = "redraw";
 
 Document::Document() {
-
+    this->_image = new Image{"./images/eiffel.jpg"};
 }
 
 Document::Document(const Document &reference) {
-
+    this->_image = new Image{*reference._image};
 }
 
 Document::~Document() {
+    delete this->_image;
+}
 
+void Document::redraw() noexcept {
+    DocumentRedrawEvent event{this};
+    this->emit_event(Document::REDRAW_EVENT, event);
+}
+
+Image &Document::image() noexcept {
+    return *this->_image;
 }

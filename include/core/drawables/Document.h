@@ -17,17 +17,23 @@
 #ifndef IMAGE_MORPHING_TOOL_DOCUMENT_H
 #define IMAGE_MORPHING_TOOL_DOCUMENT_H
 
-#include <QImage>
+#include <event_emitter.h>
 
-class Document {
+#include "Image.h"
+
+class Document : public events::event_emitter {
+public:
+    static const char* REDRAW_EVENT;
 protected:
-    QImage _image;
+    Image* _image = nullptr;
 public:
     Document();
     Document(const Document& reference);
     ~Document();
 public:
-    
+    void redraw() noexcept;
+public:
+    [[nodiscard]] Image& image() noexcept;
 };
 
 
