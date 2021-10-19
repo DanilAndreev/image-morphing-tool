@@ -72,7 +72,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event) noexcept {
     VMouseEvent vEvent{*event, this};
     this->emit_event(Viewport::MOUSE_RELEASE_EVENT, vEvent);
     QAbstractScrollArea::mouseReleaseEvent(event);
-    if (vEvent.repaintQueued())
+    if (vEvent.repaintQueued()) //TODO: repaint canvas.
         this->repaint();
 }
 
