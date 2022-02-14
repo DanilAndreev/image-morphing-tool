@@ -17,6 +17,7 @@
 #ifndef IMAGE_MORPHING_TOOL_CMT_VULKANBACKEND_H
 #define IMAGE_MORPHING_TOOL_CMT_VULKANBACKEND_H
 
+#include <vector>
 #include <vulkan/vulkan.h>
 
 class CMTVulkanBackend {
@@ -39,6 +40,11 @@ protected:
 
     ShaderModules shaders{};
 
+    VkRenderPass renderPass = VK_NULL_HANDLE;
+    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+    std::vector<VkDescriptorSet> descriptorSets{VK_NULL_HANDLE};
+
 public:
     CMTVulkanBackend() = default;
     CMTVulkanBackend(const CMTVulkanBackend&) = delete;
@@ -47,11 +53,14 @@ public:
 public:
     VkResult initialize() noexcept;
     void release() noexcept;
-    VkResult selectPhysicalDevice(uint32_t* outQueueFamilyIndex) noexcept;
 
+    VkResult initializeRenderer() noexcept;
+    void releaseRenderer() noexcept;
 private:
+    VkResult selectPhysicalDevice(uint32_t* outQueueFamilyIndex) noexcept;
     VkResult initializeShaderModules() noexcept;
     void releaseShaderModules() noexcept;
+    VkResult createPipelineLayout(VkPipelineLayout* outPipelineLayout, std::vector<VkDescriptorSetLayout>* outSetLayouts) noexcept;
 };
 
 #endif//IMAGE_MORPHING_TOOL_CMT_VULKANBACKEND_H

@@ -17,7 +17,16 @@
 #include "SPIRVShaders.h"
 #include "tools/CMTVulkanBackend.h"
 #include <cstdint>
-#include <vector>
+#include <glm/glm.hpp>
+
+namespace ShaderDataStructs {
+    using namespace glm;
+    using uint = std::uint32_t;
+
+    struct MorphingSettings {
+        uint strokeElementsCount;
+    };
+}// namespace ShaderDataStructs
 
 VkResult CMTVulkanBackend::initialize() noexcept {
     VkApplicationInfo appInfo{VK_STRUCTURE_TYPE_APPLICATION_INFO};
@@ -94,6 +103,35 @@ VkResult CMTVulkanBackend::initialize() noexcept {
     status = vkAllocateCommandBuffers(this->device, &commandBufferAllocateInfo, &this->commandBuffer);
     if (status != VK_SUCCESS) return status;
 
+    std::vector<VkDescriptorSetLayout> setLayouts;
+    status = this->createPipelineLayout(&this->pipelineLayout, &setLayouts);
+    if (status != VK_SUCCESS) return status;
+
+    VkDescriptorPoolSize poolDescriptorTypeSizes[] = {
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+    };
+
+    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
+    descriptorPoolCreateInfo.maxSets = 1;
+    descriptorPoolCreateInfo.poolSizeCount = sizeof(poolDescriptorTypeSizes) / sizeof(poolDescriptorTypeSizes[0]);
+    descriptorPoolCreateInfo.pPoolSizes = poolDescriptorTypeSizes;
+    status = vkCreateDescriptorPool(this->device, &descriptorPoolCreateInfo, this->allocator, &this->descriptorPool);
+    if (status != VK_SUCCESS) return status;
+
+    VkDescriptorSetAllocateInfo setAllocateInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+    setAllocateInfo.descriptorPool = this->descriptorPool;
+    setAllocateInfo.descriptorSetCount = setLayouts.size();
+    setAllocateInfo.pSetLayouts = setLayouts.data();
+
+    this->descriptorSets.resize(setAllocateInfo.descriptorSetCount);
+    status = vkAllocateDescriptorSets(this->device, &setAllocateInfo, this->descriptorSets.data());
+    if (status != VK_SUCCESS) return status;
+
+    for (const VkDescriptorSetLayout &setLayout : setLayouts) {
+        vkDestroyDescriptorSetLayout(this->device, setLayout, this->allocator);
+    }
+
     return VK_SUCCESS;
 }
 
@@ -143,7 +181,7 @@ static VkResult createShaderModule(VkDevice device,
                                    VkAllocationCallbacks *allocator,
                                    const uint32_t *SPIRVBinary,
                                    std::size_t size,
-                                   VkShaderModule* outShaderModule) noexcept {
+                                   VkShaderModule *outShaderModule) noexcept {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.pNext = nullptr;
@@ -170,4 +208,106 @@ void CMTVulkanBackend::releaseShaderModules() noexcept {
     this->shaders.fragmentShader = VK_NULL_HANDLE;
     vkDestroyShaderModule(this->device, this->shaders.vertexShader, allocator);
     this->shaders.vertexShader = VK_NULL_HANDLE;
+}
+VkResult CMTVulkanBackend::initializeRenderer() noexcept {
+    std::vector<VkAttachmentDescription> attachments{};
+    VkAttachmentDescription attachment{};
+    attachment.format = VK_FORMAT_R8G8B8A8_UNORM;
+    attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+    attachments.push_back(attachment);
+
+    std::vector<VkSubpassDescription> subpasses{};
+    std::vector<VkAttachmentReference> attachmentReferences = {
+            {0, VK_IMAGE_LAYOUT_GENERAL},
+    };
+
+    VkSubpassDescription subpassDescription{};
+    subpassDescription.flags = 0;
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.inputAttachmentCount = 0;
+    subpassDescription.pInputAttachments = nullptr;
+    subpassDescription.colorAttachmentCount = attachmentReferences.size();
+    subpassDescription.pColorAttachments = attachmentReferences.data();
+    subpassDescription.pResolveAttachments = nullptr;
+    subpassDescription.pDepthStencilAttachment = nullptr;
+    subpassDescription.preserveAttachmentCount = 0;
+    subpassDescription.pPreserveAttachments = nullptr;
+    subpasses.push_back(subpassDescription);
+
+    std::vector<VkSubpassDependency> dependencies{};
+
+    VkRenderPassCreateInfo renderPassCreateInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+    renderPassCreateInfo.attachmentCount = attachments.size();
+    renderPassCreateInfo.pAttachments = attachments.data();
+    renderPassCreateInfo.subpassCount = subpasses.size();
+    renderPassCreateInfo.pSubpasses = subpasses.data();
+    renderPassCreateInfo.dependencyCount = dependencies.size();
+    renderPassCreateInfo.pDependencies = dependencies.data();
+
+    VkResult status;
+    status = vkCreateRenderPass(this->device, &renderPassCreateInfo, this->allocator, &this->renderPass);
+    if (status != VK_SUCCESS) return status;
+
+    return VK_SUCCESS;
+}
+
+void CMTVulkanBackend::releaseRenderer() noexcept {
+    vkDestroyRenderPass(this->device, this->renderPass, this->allocator);
+    this->renderPass = VK_NULL_HANDLE;
+}
+VkResult CMTVulkanBackend::createPipelineLayout(VkPipelineLayout *outPipelineLayout,
+                                                std::vector<VkDescriptorSetLayout> *outSetLayouts) noexcept {
+    VkResult status;
+    VkDescriptorSetLayoutBinding strokeFromSSBOLayoutBinding{};
+    strokeFromSSBOLayoutBinding.binding = 0;
+    strokeFromSSBOLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    strokeFromSSBOLayoutBinding.descriptorCount = 1;
+    strokeFromSSBOLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    strokeFromSSBOLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding strokeToSSBOLayoutBinding{};
+    strokeToSSBOLayoutBinding.binding = 1;
+    strokeToSSBOLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    strokeToSSBOLayoutBinding.descriptorCount = 1;
+    strokeToSSBOLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    strokeToSSBOLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding targetImageTextureLayoutBinding{};
+    strokeToSSBOLayoutBinding.binding = 2;
+    strokeToSSBOLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    strokeToSSBOLayoutBinding.descriptorCount = 1;
+    strokeToSSBOLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    strokeToSSBOLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding bindings[] = {strokeFromSSBOLayoutBinding,
+                                               strokeToSSBOLayoutBinding,
+                                               targetImageTextureLayoutBinding};
+    VkDescriptorSetLayoutCreateInfo createInfoUniform{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    createInfoUniform.bindingCount = sizeof(bindings) / sizeof(bindings[0]);
+    createInfoUniform.pBindings = bindings;
+
+    outSetLayouts->clear();
+    outSetLayouts->resize(1);//TODO: add set layouts global config.
+    status = vkCreateDescriptorSetLayout(this->device, &createInfoUniform, this->allocator, &outSetLayouts->at(0));
+    if (status != VK_SUCCESS) return status;
+
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(ShaderDataStructs::MorphingSettings);
+
+    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+    pipelineLayoutCreateInfo.setLayoutCount = outSetLayouts->size();
+    pipelineLayoutCreateInfo.pSetLayouts = outSetLayouts->data();
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+    pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
+
+    status = vkCreatePipelineLayout(this->device, &pipelineLayoutCreateInfo, this->allocator, outPipelineLayout);
+    return status;
 }

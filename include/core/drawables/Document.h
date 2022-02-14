@@ -23,7 +23,10 @@
 
 class Document : public events::event_emitter {
 public:
+    static const char* LOAD_EVENT;
+    static const char* UNLOAD_EVENT;
     static const char* REDRAW_EVENT;
+
 protected:
     Image* _image = nullptr;
 public:

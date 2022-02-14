@@ -5,14 +5,13 @@ layout(location = 1) out vec2 oTexCoord;
 
 layout(push_constant) uniform MorphingSettings {
     uint strokeElementsCount;
-
 } morphingSettings;
 
-layout(binding = 0, std430) readonly buffer StrokeFrom {
+layout(set = 0, binding = 0, std430) readonly buffer StrokeFrom {
     vec2[] points;
 } strokeFrom;
 
-layout(binding = 0, std430) readonly buffer StrokeTo {
+layout(set = 0, binding = 1, std430) readonly buffer StrokeTo {
     vec2[] points;
 } strokeTo;
 
@@ -28,9 +27,9 @@ void main() {
         float dragDistance = distance(fromPoint, toPoint);
         float myDistance = distance(fromPoint, position);
         if (myDistance < dragDistance) {
-            vec2 maxDistort = (toPoint - fromPoint) / 4.0;
+            vec2 maxDistort = (toPoint - fromPoint) / 4.0f;
             float normalizedDistance = myDistance / dragDistance;
-            float normalizedImpact = (cos(normalizedDistance*PI)+1.0f)/2.0f;
+            float normalizedImpact = (cos(normalizedDistance*PI) + 1.0f) / 2.0f;
             position += maxDistort * normalizedImpact;
         }
     }
