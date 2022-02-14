@@ -28,9 +28,11 @@ void CurveMorphingTool::initialize(Application *application) {
     ToolSnapshotEvents::initialize(application);
     ToolCanvasEvents::initialize(application);
     this->_application = application;
+    this->backend.initialize(); //TODO: get status;
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {
+    this->backend.release();
     ToolViewportEvents::uninitialize(application);
     ToolSnapshotEvents::uninitialize(application);
     ToolCanvasEvents::uninitialize(application);

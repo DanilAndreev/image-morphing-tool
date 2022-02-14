@@ -29,6 +29,8 @@
 #include "core/Stroke/Stroke.h"
 #include "core/history/Memento.h"
 
+#include "CMTVulkanBackend.h"
+
 struct CurveMorphingToolMemento : public Memento {
     Stroke strokeFrom;
     Stroke strokeTo;
@@ -46,6 +48,9 @@ public:
 public:
     bool displayDirections = false;
     bool firstStroke = true;
+
+protected:
+    CMTVulkanBackend backend{};
 public:
     CurveMorphingTool() noexcept;
     virtual ~CurveMorphingTool() = default;
