@@ -1,18 +1,40 @@
 #version 450 core
 
-layout(location = 0) in vec3 vPosition;
-layout(location = 1) in vec2 iTexCoord;
+layout(location = 0) in vec2 vPosition;
 layout(location = 1) out vec2 oTexCoord;
 
+layout(push_constant) uniform MorphingSettings {
+    uint strokeElementsCount;
+
+} morphingSettings;
+
 layout(binding = 0, std430) readonly buffer StrokeFrom {
-    vec2[] data;
+    vec2[] points;
 } strokeFrom;
 
 layout(binding = 0, std430) readonly buffer StrokeTo {
-    vec2[] data;
+    vec2[] points;
 } strokeTo;
 
+const float PI = 3.14159265359f;
+
 void main() {
-    gl_Position = vec4(vPosition, 1);
-    oTexCoord = iTexCoord;
+    vec2 position = vPosition * 2.0 - 1.0;
+
+    for (uint i = 0; i < morphingSettings.strokeElementsCount; ++i) {
+        vec2 fromPoint = strokeFrom.points[i];
+        vec2 toPoint = strokeTo.points[i];
+
+        float dragDistance = distance(fromPoint, toPoint);
+        float myDistance = distance(fromPoint, position);
+        if (myDistance < dragDistance) {
+            vec2 maxDistort = (toPoint - fromPoint) / 4.0;
+            float normalizedDistance = myDistance / dragDistance;
+            float normalizedImpact = (cos(normalizedDistance*PI)+1.0f)/2.0f;
+            position += maxDistort * normalizedImpact;
+        }
+    }
+
+    gl_Position = vec4(position, 0.0f, 1.0f);
+    oTexCoord = vPosition;
 }
