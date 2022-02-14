@@ -56,6 +56,7 @@ public:
     void mouseReleaseEventHandler(VMouseEvent& event) override;
     void snapshotCreateEventHandler(SnapshotCreateEvent &event) override;
     void snapshotRestoreEventHandler(SnapshotRestoreEvent &event) override;
+    void keyPressEventHandler(VKeyEvent& event) override;
 public:
     void initialize(Application* application) override;
     void uninitialize(Application* application) noexcept override;

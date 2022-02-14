@@ -45,6 +45,10 @@ void CurveMorphingTool::canvasPaintEventHandler(CPaintEvent &event) {
     blackPen.setColor({0, 0, 0});
     blackPen.setWidth(3);
 
+    QPen yellowPen = QPen{};
+    blackPen.setColor({150, 150, 0});
+    blackPen.setWidth(3);
+
     QPen bluePen = QPen{};
     bluePen.setColor({0, 0, 255});
     bluePen.setWidth(3);
@@ -63,7 +67,7 @@ void CurveMorphingTool::canvasPaintEventHandler(CPaintEvent &event) {
         drawer.bind(&this->strokeTo);
         painter.setPen(blackPen);
         drawer.draw(painter);
-        painter.setPen(redPen);
+        painter.setPen(yellowPen);
         drawer.drawPoints(painter);
     }
     if (!this->currentStroke.empty()) {
@@ -121,4 +125,9 @@ void CurveMorphingTool::snapshotRestoreEventHandler(SnapshotRestoreEvent &event)
     auto memento = dynamic_cast<CurveMorphingToolMemento*>(event.snapshot->at("curve-morphing-tool"));
     this->strokeFrom = memento->strokeFrom;
     this->strokeTo = memento->strokeTo;
+}
+void CurveMorphingTool::keyPressEventHandler(VKeyEvent& event) {
+    if (event.key() == Qt::Key::Key_Space) {
+      this->firstStroke = !this->firstStroke;
+    }
 }

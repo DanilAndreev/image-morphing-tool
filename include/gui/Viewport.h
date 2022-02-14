@@ -56,6 +56,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) noexcept override;
     void mousePressEvent(QMouseEvent *event) noexcept override;
     void mouseReleaseEvent(QMouseEvent *event) noexcept override;
+    void keyPressEvent(QKeyEvent *event) noexcept override;
 };
 
 
