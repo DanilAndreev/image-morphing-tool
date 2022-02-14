@@ -19,6 +19,8 @@
 
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "core/drawables/Image.h"
+#include "core/Stroke/Stroke.h"
 
 class CMTVulkanBackend {
 protected:
@@ -45,6 +47,21 @@ protected:
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet> descriptorSets{VK_NULL_HANDLE};
 
+    VkPipeline pipeline = VK_NULL_HANDLE;
+private:
+    VkDeviceMemory sourceImageMemory = VK_NULL_HANDLE;
+    VkImage sourceImage = VK_NULL_HANDLE;
+    VkImageView sourceImageView = VK_NULL_HANDLE;
+
+    VkDeviceMemory resultImageMemory = VK_NULL_HANDLE;
+    VkImage resultImage = VK_NULL_HANDLE;
+    VkImageView resultImageView = VK_NULL_HANDLE;
+
+    VkDeviceMemory fromStrokeMemory = VK_NULL_HANDLE;
+    VkBuffer fromStrokeBuffer = VK_NULL_HANDLE;
+
+    VkDeviceMemory toStrokeMemory = VK_NULL_HANDLE;
+    VkBuffer toStrokeBuffer = VK_NULL_HANDLE;
 public:
     CMTVulkanBackend() = default;
     CMTVulkanBackend(const CMTVulkanBackend&) = delete;
@@ -56,6 +73,8 @@ public:
 
     VkResult initializeRenderer() noexcept;
     void releaseRenderer() noexcept;
+
+    VkResult execute(Image& image, const Stroke& fromStroke, const Stroke& toStroke) noexcept;
 private:
     VkResult selectPhysicalDevice(uint32_t* outQueueFamilyIndex) noexcept;
     VkResult initializeShaderModules() noexcept;

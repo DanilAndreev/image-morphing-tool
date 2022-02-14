@@ -128,7 +128,7 @@ VkResult CMTVulkanBackend::initialize() noexcept {
     status = vkAllocateDescriptorSets(this->device, &setAllocateInfo, this->descriptorSets.data());
     if (status != VK_SUCCESS) return status;
 
-    for (const VkDescriptorSetLayout &setLayout : setLayouts) {
+    for (const VkDescriptorSetLayout &setLayout: setLayouts) {
         vkDestroyDescriptorSetLayout(this->device, setLayout, this->allocator);
     }
 
@@ -254,6 +254,9 @@ VkResult CMTVulkanBackend::initializeRenderer() noexcept {
     status = vkCreateRenderPass(this->device, &renderPassCreateInfo, this->allocator, &this->renderPass);
     if (status != VK_SUCCESS) return status;
 
+
+
+
     return VK_SUCCESS;
 }
 
@@ -310,4 +313,35 @@ VkResult CMTVulkanBackend::createPipelineLayout(VkPipelineLayout *outPipelineLay
 
     status = vkCreatePipelineLayout(this->device, &pipelineLayoutCreateInfo, this->allocator, outPipelineLayout);
     return status;
+}
+
+VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const Stroke &toStroke) noexcept {
+    VkCommandBufferBeginInfo commandBufferBeginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    commandBufferBeginInfo.pInheritanceInfo = nullptr;
+    vkBeginCommandBuffer(this->commandBuffer, &commandBufferBeginInfo);
+
+    vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline);
+
+    uint32_t dOffset = 0;
+    vkCmdBindDescriptorSets(this->commandBuffer,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            this->pipelineLayout,
+                            0,
+                            this->descriptorSets.size(),
+                            this->descriptorSets.data(),
+                            1,
+                            &dOffset);//TODO: caution
+
+    ShaderDataStructs::MorphingSettings morphingSettings{};
+    morphingSettings.strokeElementsCount = fromStroke.size();
+
+    vkCmdPushConstants(this->commandBuffer, this->pipelineLayout,
+                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataStructs::MorphingSettings),
+                       &morphingSettings);
+
+    VkDeviceSize vertexBufferOffset = 0;
+    vkCmdBindVertexBuffers(this->commandBuffer, 0, 1, &this->cubeVertexBuffer, &vertexBufferOffset);
+
+
 }
