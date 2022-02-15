@@ -332,8 +332,13 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     commandBufferBeginInfo.pInheritanceInfo = nullptr;
     vkBeginCommandBuffer(this->commandBuffer, &commandBufferBeginInfo);
-
     vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline);
+
+    //TODO: barrier
+
+    status = this->uploadResources(image);
+    if (status != VK_SUCCESS) return status;
+    this->bindResources();
 
     uint32_t dOffset = 0;
     vkCmdBindDescriptorSets(this->commandBuffer,
@@ -494,6 +499,25 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
                                this->allocator, &this->resultImageView);
     if (status != VK_SUCCESS) return status;
 
+    VkSamplerCreateInfo sourceSamplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    sourceSamplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+    sourceSamplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+    sourceSamplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    sourceSamplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sourceSamplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sourceSamplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sourceSamplerCreateInfo.mipLodBias = 0.0f;
+    sourceSamplerCreateInfo.anisotropyEnable = VK_FALSE;
+    sourceSamplerCreateInfo.maxAnisotropy = 0.0f;
+    sourceSamplerCreateInfo.compareEnable = VK_FALSE;
+    sourceSamplerCreateInfo.minLod = 0.0f;
+    sourceSamplerCreateInfo.maxLod = 0.0f;
+    sourceSamplerCreateInfo.borderColor = {};
+    sourceSamplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+    status = vkCreateSampler(this->device, &sourceSamplerCreateInfo,
+                             this->allocator, &this->sourceImageSampler);
+    if (status != VK_SUCCESS) return status;
+
     // -------------------------------------------------------------------------------------------------------------- LOAD/READBACK BUFFER
     VkBufferCreateInfo loadReadBufferCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     loadReadBufferCreateInfo.size = sourceTextureMemReq.size;
@@ -515,14 +539,6 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     status = vkAllocateMemory(this->device, &loadReadBufferMemoryCreateInfo,
                               this->allocator, &this->loadReadBufferMemory);
     if (status != VK_SUCCESS) return status;
-
-    //    status = vkMapMemory(this->device, this->sourceImageMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
-    //    if (status != VK_SUCCESS) return status;
-    //    const unsigned char *imageData = image.constBits();
-    //    memcpy(mappedData, imageData, image.sizeInBytes());//todo: careful
-    //    vkUnmapMemory(this->device, this->toStrokeMemory);
-
-
     return VK_SUCCESS;
 }
 
@@ -723,4 +739,64 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
                                      &pipelineCreateInfo,
                                      this->allocator,
                                      &this->pipeline);
+}
+
+VkResult CMTVulkanBackend::uploadResources(const Image &image) noexcept {
+    VkResult status;
+    void* mappedData = nullptr;
+    status = vkMapMemory(this->device, this->loadReadBufferMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
+    if (status != VK_SUCCESS) return status;
+    const unsigned char *imageData = image.constBits();
+    memcpy(mappedData, imageData, image.sizeInBytes());//todo: careful
+    vkUnmapMemory(this->device, this->toStrokeMemory);
+
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {
+            static_cast<std::uint32_t>(image.width()),
+            static_cast<std::uint32_t>(image.height()),
+            1
+    };
+
+    vkCmdCopyBufferToImage(this->commandBuffer, this->loadReadBuffer, this->sourceImage,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    return VK_SUCCESS;
+}
+
+void CMTVulkanBackend::bindResources() noexcept {
+    VkDescriptorBufferInfo bufferInfos[] = {
+            {this->fromStrokeBuffer, 0, VK_WHOLE_SIZE},
+            {this->toStrokeBuffer, 0, VK_WHOLE_SIZE},
+    };
+
+    VkWriteDescriptorSet strokesWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    strokesWrite.dstSet = this->descriptorSets[0];
+    strokesWrite.dstBinding = 0;
+    strokesWrite.dstArrayElement = 0;
+    strokesWrite.descriptorCount = ARR_ELEM_COUNT(bufferInfos);
+    strokesWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    strokesWrite.pBufferInfo = bufferInfos;
+
+    VkDescriptorImageInfo textureInfos[] = {
+            {this->sourceImageSampler, this->sourceImageView, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR},
+    };
+
+
+    VkWriteDescriptorSet texturesWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    strokesWrite.dstSet = this->descriptorSets[0];
+    strokesWrite.dstBinding = 2;
+    strokesWrite.dstArrayElement = 0;
+    strokesWrite.descriptorCount = ARR_ELEM_COUNT(textureInfos);
+    strokesWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    strokesWrite.pImageInfo = textureInfos;
+
+    VkWriteDescriptorSet descriptorWrites[] = {strokesWrite, texturesWrite};
+
+    vkUpdateDescriptorSets(this->device,
+                           ARR_ELEM_COUNT(descriptorWrites), descriptorWrites,
+                           0, nullptr);
 }

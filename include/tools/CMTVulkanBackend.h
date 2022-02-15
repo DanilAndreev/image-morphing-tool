@@ -52,6 +52,7 @@ private:
     VkDeviceMemory sourceImageMemory = VK_NULL_HANDLE;
     VkImage sourceImage = VK_NULL_HANDLE;
     VkImageView sourceImageView = VK_NULL_HANDLE;
+    VkSampler sourceImageSampler = VK_NULL_HANDLE;
 
     VkDeviceMemory resultImageMemory = VK_NULL_HANDLE;
     VkImage resultImage = VK_NULL_HANDLE;
@@ -86,6 +87,8 @@ private:
     VkResult allocateResources(const Image& image, const Stroke& strokeFrom, const Stroke& strokeTo) noexcept;
     void releaseResources() noexcept;
     VkResult createPSO(const Image& image) noexcept;
+    VkResult uploadResources(const Image& image) noexcept;
+    void bindResources() noexcept;
 protected:
     std::uint32_t findMemoryType(const VkMemoryRequirements &memoryRequirements,
                                  VkMemoryPropertyFlags requiredFlags,
