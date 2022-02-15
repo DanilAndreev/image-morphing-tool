@@ -19,12 +19,18 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 
+#define ARR_ELEM_COUNT(arr) sizeof(arr) / sizeof(arr[0])
+
 namespace ShaderDataStructs {
     using namespace glm;
     using uint = std::uint32_t;
 
     struct MorphingSettings {
         uint strokeElementsCount;
+    };
+
+    struct VertexData {
+        vec2 vPosition;
     };
 }// namespace ShaderDataStructs
 
@@ -314,7 +320,13 @@ VkResult CMTVulkanBackend::createPipelineLayout(VkPipelineLayout *outPipelineLay
 }
 
 VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const Stroke &toStroke) noexcept {
-    this->allocateResources(image, fromStroke, toStroke);
+    VkResult status;
+    status = this->allocateResources(image, fromStroke, toStroke);
+    if (status != VK_SUCCESS) return status;
+    status = this->initializeRenderer();
+    if (status != VK_SUCCESS) return status;
+    status = this->createPSO(image);
+    if (status != VK_SUCCESS) return status;
 
     VkCommandBufferBeginInfo commandBufferBeginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -499,16 +511,16 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     VkMemoryAllocateInfo loadReadBufferMemoryCreateInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     loadReadBufferMemoryCreateInfo.allocationSize = loadReadBufferMemReq.size;
     loadReadBufferMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(strokeFromSSBOMemReq,
-                                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+                                                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     status = vkAllocateMemory(this->device, &loadReadBufferMemoryCreateInfo,
                               this->allocator, &this->loadReadBufferMemory);
     if (status != VK_SUCCESS) return status;
 
-//    status = vkMapMemory(this->device, this->sourceImageMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
-//    if (status != VK_SUCCESS) return status;
-//    const unsigned char *imageData = image.constBits();
-//    memcpy(mappedData, imageData, image.sizeInBytes());//todo: careful
-//    vkUnmapMemory(this->device, this->toStrokeMemory);
+    //    status = vkMapMemory(this->device, this->sourceImageMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
+    //    if (status != VK_SUCCESS) return status;
+    //    const unsigned char *imageData = image.constBits();
+    //    memcpy(mappedData, imageData, image.sizeInBytes());//todo: careful
+    //    vkUnmapMemory(this->device, this->toStrokeMemory);
 
 
     return VK_SUCCESS;
@@ -569,4 +581,146 @@ std::uint32_t CMTVulkanBackend::findMemoryType(const VkMemoryRequirements &memor
     }
 
     return selectedType;
+}
+VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
+    VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2];
+    shaderStageCreateInfo[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+    shaderStageCreateInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shaderStageCreateInfo[0].module = this->shaders.vertexShader;
+    shaderStageCreateInfo[0].pName = "main";
+    shaderStageCreateInfo[0].pSpecializationInfo = nullptr;
+
+    shaderStageCreateInfo[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+    shaderStageCreateInfo[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStageCreateInfo[1].module = this->shaders.fragmentShader;
+    shaderStageCreateInfo[1].pName = "main";
+    shaderStageCreateInfo[1].pSpecializationInfo = nullptr;
+
+    VkVertexInputBindingDescription vertexInputBindings[] = {
+            {0, sizeof(ShaderDataStructs::VertexData), VK_VERTEX_INPUT_RATE_VERTEX},
+    };
+
+    VkVertexInputAttributeDescription vertexAttributes[] = {
+            {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ShaderDataStructs::VertexData, vPosition)},
+    };
+
+    VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+    vertexInputStateCreateInfo.vertexBindingDescriptionCount = ARR_ELEM_COUNT(vertexInputBindings);
+    vertexInputStateCreateInfo.pVertexBindingDescriptions = vertexInputBindings;
+    vertexInputStateCreateInfo.vertexAttributeDescriptionCount = ARR_ELEM_COUNT(vertexAttributes);
+    vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexAttributes;
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+    inputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+    inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(image.width());
+    viewport.height = static_cast<float>(image.height());
+    viewport.minDepth = 1000.0f;
+
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = {static_cast<uint32_t>(image.width()),
+                      static_cast<uint32_t>(image.height())};
+
+    VkPipelineViewportStateCreateInfo viewportStateCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+    viewportStateCreateInfo.viewportCount = 1;
+    viewportStateCreateInfo.pViewports = &viewport;
+    viewportStateCreateInfo.scissorCount = 1;
+    viewportStateCreateInfo.pScissors = &scissor;
+
+    VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+    rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
+    rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+    rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
+    rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizationStateCreateInfo.depthBiasClamp = VK_FALSE;
+    rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
+    rasterizationStateCreateInfo.depthBiasClamp = 0.0f;
+    rasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
+    rasterizationStateCreateInfo.lineWidth = 1.0f;
+
+    //----
+    VkPipelineColorBlendStateCreateInfo cb{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+    cb.flags = 0;
+    cb.pNext = nullptr;
+
+    VkPipelineColorBlendAttachmentState att_state[1];
+    att_state[0].colorWriteMask = 0xf;
+    att_state[0].blendEnable = VK_FALSE;
+    att_state[0].alphaBlendOp = VK_BLEND_OP_ADD;
+    att_state[0].colorBlendOp = VK_BLEND_OP_ADD;
+    att_state[0].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    att_state[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    att_state[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    att_state[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    cb.attachmentCount = 1;
+    cb.pAttachments = att_state;
+    cb.logicOpEnable = VK_FALSE;
+    cb.logicOp = VK_LOGIC_OP_NO_OP;
+    cb.blendConstants[0] = 1.0f;
+    cb.blendConstants[1] = 1.0f;
+    cb.blendConstants[2] = 1.0f;
+    cb.blendConstants[3] = 1.0f;
+
+
+    VkPipelineDepthStencilStateCreateInfo ds{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+    ds.depthTestEnable = VK_TRUE;
+    ds.depthWriteEnable = VK_TRUE;
+    ds.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    ds.depthBoundsTestEnable = VK_FALSE;
+    ds.stencilTestEnable = VK_FALSE;
+    ds.minDepthBounds = 0.0f;
+    ds.maxDepthBounds = 1.0f;
+    ds.stencilTestEnable = VK_FALSE;
+    ds.front = {};
+    ds.back = {};
+
+    VkPipelineMultisampleStateCreateInfo ms{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+    ms.pSampleMask = nullptr;
+    ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    ms.sampleShadingEnable = VK_FALSE;
+    ms.alphaToCoverageEnable = VK_FALSE;
+    ms.alphaToOneEnable = VK_FALSE;
+    ms.minSampleShading = 0.0;
+
+    VkDynamicState dynamicStateEnables[2];// Viewport + Scissor
+    VkPipelineDynamicStateCreateInfo dynamicState = {};
+    memset(dynamicStateEnables, 0, sizeof(dynamicStateEnables));
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.pNext = nullptr;
+    dynamicState.pDynamicStates = dynamicStateEnables;
+    dynamicState.dynamicStateCount = 0;
+
+    //----
+
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+    pipelineCreateInfo.stageCount = ARR_ELEM_COUNT(shaderStageCreateInfo);
+    pipelineCreateInfo.pStages = shaderStageCreateInfo;
+    pipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
+    pipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+    pipelineCreateInfo.pTessellationState = nullptr;
+    pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
+    pipelineCreateInfo.pRasterizationState = &rasterizationStateCreateInfo;
+    pipelineCreateInfo.pMultisampleState = &ms;
+    pipelineCreateInfo.pDepthStencilState = &ds;
+    pipelineCreateInfo.pColorBlendState = &cb;
+    pipelineCreateInfo.pDynamicState = &dynamicState;
+    pipelineCreateInfo.layout = this->pipelineLayout;
+    pipelineCreateInfo.renderPass = this->renderPass;
+    pipelineCreateInfo.subpass = 0;
+    pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineCreateInfo.basePipelineIndex = 0;
+
+    return vkCreateGraphicsPipelines(this->device,
+                                     VK_NULL_HANDLE,//TODO: load cache
+                                     1,
+                                     &pipelineCreateInfo,
+                                     this->allocator,
+                                     &this->pipeline);
 }
