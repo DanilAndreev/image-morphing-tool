@@ -62,6 +62,9 @@ private:
 
     VkDeviceMemory toStrokeMemory = VK_NULL_HANDLE;
     VkBuffer toStrokeBuffer = VK_NULL_HANDLE;
+
+    VkDeviceMemory loadReadBufferMemory = VK_NULL_HANDLE;
+    VkBuffer loadReadBuffer = VK_NULL_HANDLE;
 public:
     CMTVulkanBackend() = default;
     CMTVulkanBackend(const CMTVulkanBackend&) = delete;

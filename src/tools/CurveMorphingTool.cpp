@@ -18,17 +18,17 @@
 
 #include <QPainter>
 
-#include "core/Stroke/StrokeManager.h"
 #include "core/Stroke/StrokeDrawer.h"
+#include "core/Stroke/StrokeManager.h"
 
-CurveMorphingTool::CurveMorphingTool() noexcept: ToolViewportEvents(), displayDirections(false) {}
+CurveMorphingTool::CurveMorphingTool() noexcept : ToolViewportEvents(), displayDirections(false) {}
 
 void CurveMorphingTool::initialize(Application *application) {
     ToolViewportEvents::initialize(application);
     ToolSnapshotEvents::initialize(application);
     ToolCanvasEvents::initialize(application);
     this->_application = application;
-    this->backend.initialize(); //TODO: get status;
+    this->backend.initialize();//TODO: get status;
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {
@@ -124,12 +124,19 @@ void CurveMorphingTool::snapshotCreateEventHandler(SnapshotCreateEvent &event) {
 }
 
 void CurveMorphingTool::snapshotRestoreEventHandler(SnapshotRestoreEvent &event) {
-    auto memento = dynamic_cast<CurveMorphingToolMemento*>(event.snapshot->at("curve-morphing-tool"));
+    auto memento = dynamic_cast<CurveMorphingToolMemento *>(event.snapshot->at("curve-morphing-tool"));
     this->strokeFrom = memento->strokeFrom;
     this->strokeTo = memento->strokeTo;
 }
-void CurveMorphingTool::keyPressEventHandler(VKeyEvent& event) {
-    if (event.key() == Qt::Key::Key_Space) {
-      this->firstStroke = !this->firstStroke;
+void CurveMorphingTool::keyPressEventHandler(VKeyEvent &event) {
+    switch (event.key()) {
+        case Qt::Key::Key_Space:
+            this->firstStroke = !this->firstStroke;
+            break;
+        case Qt::Key::Key_Enter:
+        case Qt::Key::Key_Return:
+            this->backend.execute(this->_application->document()->image(),
+                                  this->strokeFrom, this->strokeTo);
+            break;
     }
 }

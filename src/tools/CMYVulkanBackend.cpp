@@ -341,12 +341,14 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
                        &morphingSettings);
 
     VkDeviceSize vertexBufferOffset = 0;
-//    vkCmdBindVertexBuffers(this->commandBuffer, 0, 1, &this->cubeVertexBuffer, &vertexBufferOffset);
+    //    vkCmdBindVertexBuffers(this->commandBuffer, 0, 1, &this->cubeVertexBuffer, &vertexBufferOffset);
 
     this->releaseResources();
+
+    return VK_SUCCESS;
 }
 
-static void fillStrokeData(const Stroke& stroke, const Image& canvas, glm::vec2* outData) {
+static void fillStrokeData(const Stroke &stroke, const Image &canvas, glm::vec2 *outData) {
     auto canvasWidth = static_cast<float>(canvas.width());
     auto canvasHeight = static_cast<float>(canvas.height());
     for (std::size_t i = 0; i < stroke.size(); ++i) {
@@ -399,12 +401,12 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     void *mappedData = nullptr;
     status = vkMapMemory(this->device, this->fromStrokeMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
     if (status != VK_SUCCESS) return status;
-    fillStrokeData(strokeFrom, image, reinterpret_cast<glm::vec2*>(mappedData));
+    fillStrokeData(strokeFrom, image, reinterpret_cast<glm::vec2 *>(mappedData));
     vkUnmapMemory(this->device, this->fromStrokeMemory);
 
     status = vkMapMemory(this->device, this->toStrokeMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
     if (status != VK_SUCCESS) return status;
-    fillStrokeData(strokeTo, image, reinterpret_cast<glm::vec2*>(mappedData));
+    fillStrokeData(strokeTo, image, reinterpret_cast<glm::vec2 *>(mappedData));
     vkUnmapMemory(this->device, this->toStrokeMemory);
 
     vkBindBufferMemory(this->device, this->fromStrokeBuffer, this->fromStrokeMemory, 0);
@@ -413,21 +415,22 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     // -------------------------------------------------------------------------------------------------------------- TEXTURES
     VkImageCreateInfo textureCreateInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     textureCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    textureCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    textureCreateInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
     textureCreateInfo.extent = {static_cast<std::uint32_t>(image.width()),
                                 static_cast<std::uint32_t>(image.height()), 1};
     textureCreateInfo.mipLevels = 1;
     textureCreateInfo.arrayLayers = 1;
     textureCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     textureCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    textureCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    textureCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     textureCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     status = vkCreateImage(this->device, &textureCreateInfo,
                            this->allocator, &this->sourceImage);
     if (status != VK_SUCCESS) return status;
 
-    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    textureCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     status = vkCreateImage(this->device, &textureCreateInfo,
                            this->allocator, &this->resultImage);
     if (status != VK_SUCCESS) return status;
@@ -440,25 +443,18 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     VkMemoryAllocateInfo textureMemoryCreateInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     textureMemoryCreateInfo.allocationSize = sourceTextureMemReq.size;
     textureMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(sourceTextureMemReq,
-                                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
     status = vkAllocateMemory(this->device, &textureMemoryCreateInfo,
-                              this->allocator, &this->fromStrokeMemory);
+                              this->allocator, &this->sourceImageMemory);
     if (status != VK_SUCCESS) return status;
 
     textureMemoryCreateInfo.allocationSize = resultTextureMemReq.size;
     textureMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(resultTextureMemReq,
-                                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     status = vkAllocateMemory(this->device, &textureMemoryCreateInfo,
-                              this->allocator, &this->toStrokeMemory);
+                              this->allocator, &this->resultImageMemory);
     if (status != VK_SUCCESS) return status;
-
-    status = vkMapMemory(this->device, this->sourceImageMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
-    if (status != VK_SUCCESS) return status;
-    const unsigned char* imageData = image.constBits();
-    memcpy(mappedData, imageData, image.sizeInBytes()); //todo: careful
-    vkUnmapMemory(this->device, this->toStrokeMemory);
 
     vkBindImageMemory(this->device, this->sourceImage, this->sourceImageMemory, 0);
     vkBindImageMemory(this->device, this->resultImage, this->resultImageMemory, 0);
@@ -485,6 +481,35 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     status = vkCreateImageView(this->device, &depthViewCreateInfo,
                                this->allocator, &this->resultImageView);
     if (status != VK_SUCCESS) return status;
+
+    // -------------------------------------------------------------------------------------------------------------- LOAD/READBACK BUFFER
+    VkBufferCreateInfo loadReadBufferCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    loadReadBufferCreateInfo.size = sourceTextureMemReq.size;
+    loadReadBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    loadReadBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    loadReadBufferCreateInfo.queueFamilyIndexCount = 0;
+    loadReadBufferCreateInfo.pQueueFamilyIndices = nullptr;
+    status = vkCreateBuffer(this->device, &loadReadBufferCreateInfo,
+                            this->allocator, &this->loadReadBuffer);
+    if (status != VK_SUCCESS) return status;
+    VkMemoryRequirements loadReadBufferMemReq{};
+    vkGetBufferMemoryRequirements(this->device, this->loadReadBuffer, &loadReadBufferMemReq);
+
+
+    VkMemoryAllocateInfo loadReadBufferMemoryCreateInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    loadReadBufferMemoryCreateInfo.allocationSize = loadReadBufferMemReq.size;
+    loadReadBufferMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(strokeFromSSBOMemReq,
+                                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    status = vkAllocateMemory(this->device, &loadReadBufferMemoryCreateInfo,
+                              this->allocator, &this->loadReadBufferMemory);
+    if (status != VK_SUCCESS) return status;
+
+//    status = vkMapMemory(this->device, this->sourceImageMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
+//    if (status != VK_SUCCESS) return status;
+//    const unsigned char *imageData = image.constBits();
+//    memcpy(mappedData, imageData, image.sizeInBytes());//todo: careful
+//    vkUnmapMemory(this->device, this->toStrokeMemory);
+
 
     return VK_SUCCESS;
 }
