@@ -314,6 +314,8 @@ VkResult CMTVulkanBackend::createPipelineLayout(VkPipelineLayout *outPipelineLay
 }
 
 VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const Stroke &toStroke) noexcept {
+    this->allocateResources(image, fromStroke, toStroke);
+
     VkCommandBufferBeginInfo commandBufferBeginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     commandBufferBeginInfo.pInheritanceInfo = nullptr;
@@ -340,6 +342,8 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
 
     VkDeviceSize vertexBufferOffset = 0;
 //    vkCmdBindVertexBuffers(this->commandBuffer, 0, 1, &this->cubeVertexBuffer, &vertexBufferOffset);
+
+    this->releaseResources();
 }
 
 static void fillStrokeData(const Stroke& stroke, const Image& canvas, glm::vec2* outData) {
@@ -458,10 +462,47 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
 
     vkBindImageMemory(this->device, this->sourceImage, this->sourceImageMemory, 0);
     vkBindImageMemory(this->device, this->resultImage, this->resultImageMemory, 0);
+
+    VkImageViewCreateInfo depthViewCreateInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    depthViewCreateInfo.image = this->sourceImage;
+    depthViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    depthViewCreateInfo.format = textureCreateInfo.format;
+    depthViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+    depthViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+    depthViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+    depthViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+    depthViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    depthViewCreateInfo.subresourceRange.baseMipLevel = 0;
+    depthViewCreateInfo.subresourceRange.levelCount = 1;
+    depthViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    depthViewCreateInfo.subresourceRange.layerCount = 1;
+
+    status = vkCreateImageView(this->device, &depthViewCreateInfo,
+                               this->allocator, &this->sourceImageView);
+    if (status != VK_SUCCESS) return status;
+
+    depthViewCreateInfo.image = this->resultImage;
+    status = vkCreateImageView(this->device, &depthViewCreateInfo,
+                               this->allocator, &this->resultImageView);
+    if (status != VK_SUCCESS) return status;
+
     return VK_SUCCESS;
 }
 
 void CMTVulkanBackend::releaseResources() noexcept {
+    vkDestroyImageView(this->device, this->resultImageView, this->allocator);
+    this->resultImageView = VK_NULL_HANDLE;
+    vkDestroyImageView(this->device, this->sourceImageView, this->allocator);
+    this->sourceImageView = VK_NULL_HANDLE;
+    vkDestroyImage(this->device, this->resultImage, this->allocator);
+    this->resultImage = VK_NULL_HANDLE;
+    vkDestroyImage(this->device, this->sourceImage, this->allocator);
+    this->sourceImage = VK_NULL_HANDLE;
+    vkFreeMemory(this->device, this->sourceImageMemory, this->allocator);
+    this->sourceImageMemory = VK_NULL_HANDLE;
+    vkFreeMemory(this->device, this->resultImageMemory, this->allocator);
+    this->resultImageMemory = VK_NULL_HANDLE;
+
     vkDestroyBuffer(this->device, this->fromStrokeBuffer, this->allocator);
     this->fromStrokeBuffer = VK_NULL_HANDLE;
     vkDestroyBuffer(this->device, this->toStrokeBuffer, this->allocator);
