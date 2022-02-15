@@ -255,8 +255,6 @@ VkResult CMTVulkanBackend::initializeRenderer() noexcept {
     if (status != VK_SUCCESS) return status;
 
 
-
-
     return VK_SUCCESS;
 }
 
@@ -341,7 +339,168 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
                        &morphingSettings);
 
     VkDeviceSize vertexBufferOffset = 0;
-    vkCmdBindVertexBuffers(this->commandBuffer, 0, 1, &this->cubeVertexBuffer, &vertexBufferOffset);
+//    vkCmdBindVertexBuffers(this->commandBuffer, 0, 1, &this->cubeVertexBuffer, &vertexBufferOffset);
+}
+
+static void fillStrokeData(const Stroke& stroke, const Image& canvas, glm::vec2* outData) {
+    auto canvasWidth = static_cast<float>(canvas.width());
+    auto canvasHeight = static_cast<float>(canvas.height());
+    for (std::size_t i = 0; i < stroke.size(); ++i) {
+        float x = static_cast<float>(stroke[i].x()) / canvasWidth;
+        float y = static_cast<float>(stroke[i].y()) / canvasHeight;
+        outData[i] = {x, y};
+    }
+}
+
+VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &strokeFrom, const Stroke &strokeTo) noexcept {
+    VkBufferCreateInfo strokeSSBOCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    strokeSSBOCreateInfo.size = strokeFrom.size() * sizeof(std::uint32_t);
+    strokeSSBOCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    strokeSSBOCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    strokeSSBOCreateInfo.queueFamilyIndexCount = 0;
+    strokeSSBOCreateInfo.pQueueFamilyIndices = nullptr;
+
+    VkResult status;
+    status = vkCreateBuffer(this->device, &strokeSSBOCreateInfo,
+                            this->allocator, &this->fromStrokeBuffer);
+    if (status != VK_SUCCESS) return status;
+    strokeSSBOCreateInfo.size = strokeTo.size() * sizeof(std::uint32_t);
+    status = vkCreateBuffer(this->device, &strokeSSBOCreateInfo,
+                            this->allocator, &this->toStrokeBuffer);
+    if (status != VK_SUCCESS) return status;
+
+    VkMemoryRequirements strokeFromSSBOMemReq{};
+    vkGetBufferMemoryRequirements(this->device, this->fromStrokeBuffer, &strokeFromSSBOMemReq);
+    VkMemoryRequirements strokeToSSBOMemReq{};
+    vkGetBufferMemoryRequirements(this->device, this->toStrokeBuffer, &strokeToSSBOMemReq);
 
 
+    VkMemoryAllocateInfo strokeSSBOMemoryCreateInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    strokeSSBOMemoryCreateInfo.allocationSize = strokeFromSSBOMemReq.size;
+    strokeSSBOMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(strokeFromSSBOMemReq,
+                                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    status = vkAllocateMemory(this->device, &strokeSSBOMemoryCreateInfo,
+                              this->allocator, &this->fromStrokeMemory);
+    if (status != VK_SUCCESS) return status;
+
+    strokeSSBOMemoryCreateInfo.allocationSize = strokeToSSBOMemReq.size;
+    strokeSSBOMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(strokeToSSBOMemReq,
+                                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    status = vkAllocateMemory(this->device, &strokeSSBOMemoryCreateInfo,
+                              this->allocator, &this->toStrokeMemory);
+    if (status != VK_SUCCESS) return status;
+
+    void *mappedData = nullptr;
+    status = vkMapMemory(this->device, this->fromStrokeMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
+    if (status != VK_SUCCESS) return status;
+    fillStrokeData(strokeFrom, image, reinterpret_cast<glm::vec2*>(mappedData));
+    vkUnmapMemory(this->device, this->fromStrokeMemory);
+
+    status = vkMapMemory(this->device, this->toStrokeMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
+    if (status != VK_SUCCESS) return status;
+    fillStrokeData(strokeTo, image, reinterpret_cast<glm::vec2*>(mappedData));
+    vkUnmapMemory(this->device, this->toStrokeMemory);
+
+    vkBindBufferMemory(this->device, this->fromStrokeBuffer, this->fromStrokeMemory, 0);
+    vkBindBufferMemory(this->device, this->toStrokeBuffer, this->toStrokeMemory, 0);
+
+    // -------------------------------------------------------------------------------------------------------------- TEXTURES
+    VkImageCreateInfo textureCreateInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    textureCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    textureCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    textureCreateInfo.extent = {static_cast<std::uint32_t>(image.width()),
+                                static_cast<std::uint32_t>(image.height()), 1};
+    textureCreateInfo.mipLevels = 1;
+    textureCreateInfo.arrayLayers = 1;
+    textureCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    textureCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    textureCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    textureCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+    status = vkCreateImage(this->device, &textureCreateInfo,
+                           this->allocator, &this->sourceImage);
+    if (status != VK_SUCCESS) return status;
+
+    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+    status = vkCreateImage(this->device, &textureCreateInfo,
+                           this->allocator, &this->resultImage);
+    if (status != VK_SUCCESS) return status;
+
+    VkMemoryRequirements sourceTextureMemReq{};
+    vkGetImageMemoryRequirements(this->device, this->sourceImage, &sourceTextureMemReq);
+    VkMemoryRequirements resultTextureMemReq{};
+    vkGetImageMemoryRequirements(this->device, this->sourceImage, &resultTextureMemReq);
+
+    VkMemoryAllocateInfo textureMemoryCreateInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    textureMemoryCreateInfo.allocationSize = sourceTextureMemReq.size;
+    textureMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(sourceTextureMemReq,
+                                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    status = vkAllocateMemory(this->device, &textureMemoryCreateInfo,
+                              this->allocator, &this->fromStrokeMemory);
+    if (status != VK_SUCCESS) return status;
+
+    textureMemoryCreateInfo.allocationSize = resultTextureMemReq.size;
+    textureMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(resultTextureMemReq,
+                                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    status = vkAllocateMemory(this->device, &textureMemoryCreateInfo,
+                              this->allocator, &this->toStrokeMemory);
+    if (status != VK_SUCCESS) return status;
+
+    status = vkMapMemory(this->device, this->sourceImageMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
+    if (status != VK_SUCCESS) return status;
+    const unsigned char* imageData = image.constBits();
+    memcpy(mappedData, imageData, image.sizeInBytes()); //todo: careful
+    vkUnmapMemory(this->device, this->toStrokeMemory);
+
+    vkBindImageMemory(this->device, this->sourceImage, this->sourceImageMemory, 0);
+    vkBindImageMemory(this->device, this->resultImage, this->resultImageMemory, 0);
+    return VK_SUCCESS;
+}
+
+void CMTVulkanBackend::releaseResources() noexcept {
+    vkDestroyBuffer(this->device, this->fromStrokeBuffer, this->allocator);
+    this->fromStrokeBuffer = VK_NULL_HANDLE;
+    vkDestroyBuffer(this->device, this->toStrokeBuffer, this->allocator);
+    this->toStrokeBuffer = VK_NULL_HANDLE;
+    vkFreeMemory(this->device, this->fromStrokeMemory, this->allocator);
+    this->fromStrokeMemory = VK_NULL_HANDLE;
+    vkFreeMemory(this->device, this->toStrokeMemory, this->allocator);
+    this->toStrokeMemory = VK_NULL_HANDLE;
+}
+
+std::uint32_t CMTVulkanBackend::findMemoryType(const VkMemoryRequirements &memoryRequirements,
+                                               VkMemoryPropertyFlags requiredFlags,
+                                               VkMemoryPropertyFlags preferredFlags) noexcept {
+    preferredFlags |= requiredFlags;
+    VkPhysicalDeviceMemoryProperties memoryProperties{};
+    vkGetPhysicalDeviceMemoryProperties(this->physicalDevice, &memoryProperties);
+    uint32_t selectedType = ~0u;
+    uint32_t memoryType;
+    for (memoryType = 0; memoryType < 32; ++memoryType) {
+        if (memoryRequirements.memoryTypeBits & (1 << memoryType)) {
+            const VkMemoryType &type = memoryProperties.memoryTypes[memoryType];
+            if ((type.propertyFlags & preferredFlags) == preferredFlags) {
+                selectedType = memoryType;
+                break;
+            }
+        }
+    }
+
+    if (selectedType != ~0u) {
+        for (memoryType = 0; memoryType < 32; ++memoryType) {
+            if (memoryRequirements.memoryTypeBits & (1 << memoryType)) {
+                const VkMemoryType &type = memoryProperties.memoryTypes[memoryType];
+                if ((type.propertyFlags & requiredFlags) == requiredFlags) {
+                    selectedType = memoryType;
+                    break;
+                }
+            }
+        }
+    }
+
+    return selectedType;
 }

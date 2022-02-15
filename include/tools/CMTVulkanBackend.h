@@ -80,6 +80,13 @@ private:
     VkResult initializeShaderModules() noexcept;
     void releaseShaderModules() noexcept;
     VkResult createPipelineLayout(VkPipelineLayout* outPipelineLayout, std::vector<VkDescriptorSetLayout>* outSetLayouts) noexcept;
+    VkResult allocateResources(const Image& image, const Stroke& strokeFrom, const Stroke& strokeTo) noexcept;
+    void releaseResources() noexcept;
+
+protected:
+    std::uint32_t findMemoryType(const VkMemoryRequirements &memoryRequirements,
+                                 VkMemoryPropertyFlags requiredFlags,
+                                 VkMemoryPropertyFlags preferredFlags = 0) noexcept;
 };
 
 #endif//IMAGE_MORPHING_TOOL_CMT_VULKANBACKEND_H
