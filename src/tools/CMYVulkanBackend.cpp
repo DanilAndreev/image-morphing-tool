@@ -68,12 +68,11 @@ VkResult CMTVulkanBackend::initialize() noexcept {
     status = vkCreateInstance(&instanceCreateInfo, this->allocator, &this->instance);
     if (status != VK_SUCCESS) return status;
 
-    uint32_t queueFamilyIndex;
-    status = this->selectPhysicalDevice(&queueFamilyIndex);
+    status = this->selectPhysicalDevice(&this->queueIndex);
     if (status != VK_SUCCESS) return status;
 
     VkDeviceQueueCreateInfo deviceQueueCreateInfo{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-    deviceQueueCreateInfo.queueFamilyIndex = queueFamilyIndex;
+    deviceQueueCreateInfo.queueFamilyIndex = this->queueIndex;
     deviceQueueCreateInfo.queueCount = 1;
     deviceQueueCreateInfo.pQueuePriorities = nullptr;
 
@@ -98,7 +97,7 @@ VkResult CMTVulkanBackend::initialize() noexcept {
     if (status != VK_SUCCESS) return status;
 
     VkCommandPoolCreateInfo commandPoolCreateInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-    commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndex;
+    commandPoolCreateInfo.queueFamilyIndex = this->queueIndex;
     status = vkCreateCommandPool(this->device, &commandPoolCreateInfo, this->allocator, &this->commandPool);
     if (status != VK_SUCCESS) return status;
 
@@ -334,8 +333,6 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     vkBeginCommandBuffer(this->commandBuffer, &commandBufferBeginInfo);
     vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline);
 
-    //TODO: barrier
-
     status = this->uploadResources(image);
     if (status != VK_SUCCESS) return status;
     this->bindResources();
@@ -446,7 +443,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
                            this->allocator, &this->sourceImage);
     if (status != VK_SUCCESS) return status;
 
-    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     textureCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     status = vkCreateImage(this->device, &textureCreateInfo,
                            this->allocator, &this->resultImage);
@@ -748,7 +745,37 @@ VkResult CMTVulkanBackend::uploadResources(const Image &image) noexcept {
     if (status != VK_SUCCESS) return status;
     const unsigned char *imageData = image.constBits();
     memcpy(mappedData, imageData, image.sizeInBytes());//todo: careful
+
+    VkMappedMemoryRange flushRange{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+    flushRange.memory = this->loadReadBufferMemory;
+    flushRange.offset = 0;
+    flushRange.size = VK_WHOLE_SIZE;
+    status = vkFlushMappedMemoryRanges(this->device, 1, &flushRange);
+    if (status != VK_SUCCESS) return status;
     vkUnmapMemory(this->device, this->toStrokeMemory);
+
+    VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.srcQueueFamilyIndex = this->queueIndex;
+    barrier.dstQueueFamilyIndex = this->queueIndex;
+    barrier.image = this->sourceImage;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+
+
+    vkCmdPipelineBarrier(this->commandBuffer,
+                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         0,
+                         0, nullptr,
+                         0, nullptr,
+                         1, &barrier);
 
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
@@ -764,37 +791,54 @@ VkResult CMTVulkanBackend::uploadResources(const Image &image) noexcept {
 
     vkCmdCopyBufferToImage(this->commandBuffer, this->loadReadBuffer, this->sourceImage,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    vkCmdPipelineBarrier(this->commandBuffer,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                         0,
+                         0, nullptr,
+                         0, nullptr,
+                         1, &barrier);
     return VK_SUCCESS;
 }
 
 void CMTVulkanBackend::bindResources() noexcept {
-    VkDescriptorBufferInfo bufferInfos[] = {
-            {this->fromStrokeBuffer, 0, VK_WHOLE_SIZE},
-            {this->toStrokeBuffer, 0, VK_WHOLE_SIZE},
-    };
+    VkDescriptorBufferInfo fromBufferInfo = {this->fromStrokeBuffer, 0, VK_WHOLE_SIZE};
+    VkWriteDescriptorSet fromStrokeWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    fromStrokeWrite.dstSet = this->descriptorSets[0];
+    fromStrokeWrite.dstBinding = 0;
+    fromStrokeWrite.dstArrayElement = 0;
+    fromStrokeWrite.descriptorCount = 1;
+    fromStrokeWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    fromStrokeWrite.pBufferInfo = &fromBufferInfo;
 
-    VkWriteDescriptorSet strokesWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-    strokesWrite.dstSet = this->descriptorSets[0];
-    strokesWrite.dstBinding = 0;
-    strokesWrite.dstArrayElement = 0;
-    strokesWrite.descriptorCount = ARR_ELEM_COUNT(bufferInfos);
-    strokesWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    strokesWrite.pBufferInfo = bufferInfos;
+    VkDescriptorBufferInfo toBufferInfo = {this->toStrokeBuffer, 0, VK_WHOLE_SIZE};
+    VkWriteDescriptorSet toStrokeWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    toStrokeWrite.dstSet = this->descriptorSets[0];
+    toStrokeWrite.dstBinding = 0;
+    toStrokeWrite.dstArrayElement = 0;
+    toStrokeWrite.descriptorCount = 1;
+    toStrokeWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    toStrokeWrite.pBufferInfo = &toBufferInfo;
 
     VkDescriptorImageInfo textureInfos[] = {
-            {this->sourceImageSampler, this->sourceImageView, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR},
+            {this->sourceImageSampler, this->sourceImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL},
     };
 
-
     VkWriteDescriptorSet texturesWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-    strokesWrite.dstSet = this->descriptorSets[0];
-    strokesWrite.dstBinding = 2;
-    strokesWrite.dstArrayElement = 0;
-    strokesWrite.descriptorCount = ARR_ELEM_COUNT(textureInfos);
-    strokesWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    strokesWrite.pImageInfo = textureInfos;
+    texturesWrite.dstSet = this->descriptorSets[0];
+    texturesWrite.dstBinding = 2;
+    texturesWrite.dstArrayElement = 0;
+    texturesWrite.descriptorCount = ARR_ELEM_COUNT(textureInfos);
+    texturesWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    texturesWrite.pImageInfo = textureInfos;
 
-    VkWriteDescriptorSet descriptorWrites[] = {strokesWrite, texturesWrite};
+    VkWriteDescriptorSet descriptorWrites[] = {fromStrokeWrite, toStrokeWrite, texturesWrite};
 
     vkUpdateDescriptorSets(this->device,
                            ARR_ELEM_COUNT(descriptorWrites), descriptorWrites,
