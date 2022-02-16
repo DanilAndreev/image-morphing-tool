@@ -93,7 +93,8 @@ private:
     void releaseResources() noexcept;
     VkResult createPSO(const Image& image) noexcept;
     VkResult uploadResources(const Image& image) noexcept;
-    VkResult readbackPrepareResources() noexcept;
+    VkResult readbackPrepareResources(const Image& image) noexcept;
+    VkResult readbackResources(Image& image) noexcept;
     void bindResources() noexcept;
     VkResult generateGrid(std::size_t dimensionX, std::size_t dimensionY) noexcept;
 protected:

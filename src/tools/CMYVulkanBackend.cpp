@@ -379,7 +379,7 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.pNext = nullptr;
     renderPassBeginInfo.renderPass = this->renderPass;
-    renderPassBeginInfo.framebuffer = this->swapchainFramebuffers.at(currentImageIndex);
+    renderPassBeginInfo.framebuffer = this->framebuffer;
     renderPassBeginInfo.renderArea = {0, 0,
                                       static_cast<uint32_t>(image.width()),
                                       static_cast<uint32_t>(image.height())};
@@ -406,15 +406,13 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     submitInfo.signalSemaphoreCount = 0;
     submitInfo.pSignalSemaphores = nullptr;
 
+    this->readbackPrepareResources();
     vkQueueSubmit(this->deviceQueue, 1, &submitInfo, VK_NULL_HANDLE);
 
+    vkQueueWaitIdle(this->deviceQueue);//TODO: semaphore
 
-    this->readbackPrepareResources();
-
-    //TODO: readback;
-
+    this->readbackResources(image);
     this->releaseResources();
-
     return VK_SUCCESS;
 }
 
@@ -907,7 +905,7 @@ void CMTVulkanBackend::bindResources() noexcept {
                            ARR_ELEM_COUNT(descriptorWrites), descriptorWrites,
                            0, nullptr);
 }
-VkResult CMTVulkanBackend::readbackPrepareResources() noexcept {
+VkResult CMTVulkanBackend::readbackPrepareResources(const Image& image) noexcept {
     VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
     barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
@@ -930,6 +928,19 @@ VkResult CMTVulkanBackend::readbackPrepareResources() noexcept {
                          0, nullptr,
                          0, nullptr,
                          1, &barrier);
+
+
+    VkBufferImageCopy bufferImageCopy{};
+    bufferImageCopy.bufferOffset = 0;
+    bufferImageCopy.bufferRowLength = 0;
+    bufferImageCopy.bufferImageHeight = 0;
+    bufferImageCopy.imageOffset = {0, 0, 0};
+    bufferImageCopy.imageExtent = {static_cast<std::uint32_t>(image.width()),
+                                   static_cast<std::uint32_t>(image.height()),
+                                   1};
+
+    vkCmdCopyImageToBuffer(this->commandBuffer, this->resultImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                           this->loadReadBuffer, 1, &bufferImageCopy);
     return VK_SUCCESS;
 }
 
@@ -979,4 +990,23 @@ VkResult CMTVulkanBackend::generateGrid(std::size_t dimensionX, std::size_t dime
     vkUnmapMemory(this->device, this->fromStrokeMemory);
 
     return status;
+}
+VkResult CMTVulkanBackend::readbackResources(Image& image) noexcept {
+    VkResult status;
+    void *mappedData = nullptr;
+    status = vkMapMemory(this->device, this->loadReadBufferMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
+    if (status != VK_SUCCESS) return status;
+    VkMappedMemoryRange invalidateRange{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+    invalidateRange.memory = this->loadReadBufferMemory;
+    invalidateRange.offset = 0;
+    invalidateRange.size = VK_WHOLE_SIZE;
+    status = vkInvalidateMappedMemoryRanges(this->device, 1, &invalidateRange);
+    if (status != VK_SUCCESS) return status;
+
+    unsigned char *imageData = image.bits();
+    memcpy(imageData, mappedData, image.sizeInBytes());//todo: careful
+
+    vkUnmapMemory(this->device, this->toStrokeMemory);
+
+    return VK_SUCCESS;
 }
