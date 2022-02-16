@@ -67,6 +67,10 @@ private:
 
     VkDeviceMemory loadReadBufferMemory = VK_NULL_HANDLE;
     VkBuffer loadReadBuffer = VK_NULL_HANDLE;
+
+    VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
+    VkBuffer vertexBuffer = VK_NULL_HANDLE;
+    VkFramebuffer framebuffer = VK_NULL_HANDLE;
 public:
     CMTVulkanBackend() = default;
     CMTVulkanBackend(const CMTVulkanBackend&) = delete;
@@ -91,6 +95,7 @@ private:
     VkResult uploadResources(const Image& image) noexcept;
     VkResult readbackPrepareResources() noexcept;
     void bindResources() noexcept;
+    VkResult generateGrid(std::size_t dimensionX, std::size_t dimensionY) noexcept;
 protected:
     std::uint32_t findMemoryType(const VkMemoryRequirements &memoryRequirements,
                                  VkMemoryPropertyFlags requiredFlags,

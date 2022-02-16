@@ -322,6 +322,19 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     VkResult status;
     status = this->allocateResources(image, fromStroke, toStroke);
     if (status != VK_SUCCESS) return status;
+
+    VkFramebufferCreateInfo framebufferCreateInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+    framebufferCreateInfo.renderPass = this->renderPass;
+    framebufferCreateInfo.width = image.width();
+    framebufferCreateInfo.height = image.height();
+    framebufferCreateInfo.layers = 1;
+    framebufferCreateInfo.attachmentCount = 1;
+    framebufferCreateInfo.pAttachments = &this->resultImageView;
+    status = vkCreateFramebuffer(this->device, &framebufferCreateInfo,
+                                 this->allocator, &this->framebuffer);
+    if (status != VK_SUCCESS) return status;
+
+
     status = this->initializeRenderer();
     if (status != VK_SUCCESS) return status;
     status = this->createPSO(image);
@@ -354,8 +367,47 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataStructs::MorphingSettings),
                        &morphingSettings);
 
+
+    VkClearValue colorClearValue{};
+    colorClearValue.color = {};
+    colorClearValue.color.float32[0] = 0.0f;
+    colorClearValue.color.float32[1] = 0.0f;
+    colorClearValue.color.float32[2] = 0.0f;
+    colorClearValue.color.float32[3] = 0.0f;
+
+    VkRenderPassBeginInfo renderPassBeginInfo{};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.pNext = nullptr;
+    renderPassBeginInfo.renderPass = this->renderPass;
+    renderPassBeginInfo.framebuffer = this->swapchainFramebuffers.at(currentImageIndex);
+    renderPassBeginInfo.renderArea = {0, 0,
+                                      static_cast<uint32_t>(image.width()),
+                                      static_cast<uint32_t>(image.height())};
+    renderPassBeginInfo.clearValueCount = 1;
+    renderPassBeginInfo.pClearValues = &colorClearValue;
+
+    vkCmdBeginRenderPass(this->commandBuffer, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+
     VkDeviceSize vertexBufferOffset = 0;
-    //    vkCmdBindVertexBuffers(this->commandBuffer, 0, 1, &this->cubeVertexBuffer, &vertexBufferOffset);
+    vkCmdBindVertexBuffers(this->commandBuffer, 0, 1,
+                           &this->vertexBuffer, &vertexBufferOffset);
+
+    vkCmdDraw(this->commandBuffer, 6, 1, 0, 0);
+
+    vkCmdEndRenderPass(this->commandBuffer);
+    vkEndCommandBuffer(this->commandBuffer);
+
+    VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    submitInfo.waitSemaphoreCount = 0;
+    submitInfo.pWaitSemaphores = nullptr;
+    submitInfo.pWaitDstStageMask = nullptr;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &this->commandBuffer;
+    submitInfo.signalSemaphoreCount = 0;
+    submitInfo.pSignalSemaphores = nullptr;
+
+    vkQueueSubmit(this->deviceQueue, 1, &submitInfo, VK_NULL_HANDLE);
+
 
     this->readbackPrepareResources();
 
@@ -427,8 +479,10 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     fillStrokeData(strokeTo, image, reinterpret_cast<glm::vec2 *>(mappedData));
     vkUnmapMemory(this->device, this->toStrokeMemory);
 
-    vkBindBufferMemory(this->device, this->fromStrokeBuffer, this->fromStrokeMemory, 0);
-    vkBindBufferMemory(this->device, this->toStrokeBuffer, this->toStrokeMemory, 0);
+    status = vkBindBufferMemory(this->device, this->fromStrokeBuffer, this->fromStrokeMemory, 0);
+    if (status != VK_SUCCESS) return status;
+    status = vkBindBufferMemory(this->device, this->toStrokeBuffer, this->toStrokeMemory, 0);
+    if (status != VK_SUCCESS) return status;
 
     // -------------------------------------------------------------------------------------------------------------- TEXTURES
     VkImageCreateInfo textureCreateInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -474,29 +528,31 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
                               this->allocator, &this->resultImageMemory);
     if (status != VK_SUCCESS) return status;
 
-    vkBindImageMemory(this->device, this->sourceImage, this->sourceImageMemory, 0);
-    vkBindImageMemory(this->device, this->resultImage, this->resultImageMemory, 0);
+    status = vkBindImageMemory(this->device, this->sourceImage, this->sourceImageMemory, 0);
+    if (status != VK_SUCCESS) return status;
+    status = vkBindImageMemory(this->device, this->resultImage, this->resultImageMemory, 0);
+    if (status != VK_SUCCESS) return status;
 
-    VkImageViewCreateInfo depthViewCreateInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-    depthViewCreateInfo.image = this->sourceImage;
-    depthViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    depthViewCreateInfo.format = textureCreateInfo.format;
-    depthViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
-    depthViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
-    depthViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
-    depthViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
-    depthViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    depthViewCreateInfo.subresourceRange.baseMipLevel = 0;
-    depthViewCreateInfo.subresourceRange.levelCount = 1;
-    depthViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    depthViewCreateInfo.subresourceRange.layerCount = 1;
+    VkImageViewCreateInfo resultImageViewCreateInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    resultImageViewCreateInfo.image = this->sourceImage;
+    resultImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    resultImageViewCreateInfo.format = textureCreateInfo.format;
+    resultImageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+    resultImageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+    resultImageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+    resultImageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+    resultImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    resultImageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+    resultImageViewCreateInfo.subresourceRange.levelCount = 1;
+    resultImageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    resultImageViewCreateInfo.subresourceRange.layerCount = 1;
 
-    status = vkCreateImageView(this->device, &depthViewCreateInfo,
+    status = vkCreateImageView(this->device, &resultImageViewCreateInfo,
                                this->allocator, &this->sourceImageView);
     if (status != VK_SUCCESS) return status;
 
-    depthViewCreateInfo.image = this->resultImage;
-    status = vkCreateImageView(this->device, &depthViewCreateInfo,
+    resultImageViewCreateInfo.image = this->resultImage;
+    status = vkCreateImageView(this->device, &resultImageViewCreateInfo,
                                this->allocator, &this->resultImageView);
     if (status != VK_SUCCESS) return status;
 
@@ -535,11 +591,15 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
 
     VkMemoryAllocateInfo loadReadBufferMemoryCreateInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     loadReadBufferMemoryCreateInfo.allocationSize = loadReadBufferMemReq.size;
-    loadReadBufferMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(strokeFromSSBOMemReq,
+    loadReadBufferMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(loadReadBufferMemReq,
                                                                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     status = vkAllocateMemory(this->device, &loadReadBufferMemoryCreateInfo,
                               this->allocator, &this->loadReadBufferMemory);
     if (status != VK_SUCCESS) return status;
+    status = vkBindBufferMemory(this->device, this->loadReadBuffer, this->loadReadBufferMemory, 0);
+    if (status != VK_SUCCESS) return status;
+
+    this->generateGrid(20, 20);//TODO: load resolution.
     return VK_SUCCESS;
 }
 
@@ -744,7 +804,7 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
 
 VkResult CMTVulkanBackend::uploadResources(const Image &image) noexcept {
     VkResult status;
-    void* mappedData = nullptr;
+    void *mappedData = nullptr;
     status = vkMapMemory(this->device, this->loadReadBufferMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
     if (status != VK_SUCCESS) return status;
     const unsigned char *imageData = image.constBits();
@@ -790,8 +850,7 @@ VkResult CMTVulkanBackend::uploadResources(const Image &image) noexcept {
     region.imageExtent = {
             static_cast<std::uint32_t>(image.width()),
             static_cast<std::uint32_t>(image.height()),
-            1
-    };
+            1};
 
     vkCmdCopyBufferToImage(this->commandBuffer, this->loadReadBuffer, this->sourceImage,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
@@ -872,4 +931,52 @@ VkResult CMTVulkanBackend::readbackPrepareResources() noexcept {
                          0, nullptr,
                          1, &barrier);
     return VK_SUCCESS;
+}
+
+VkResult CMTVulkanBackend::generateGrid(std::size_t dimensionX, std::size_t dimensionY) noexcept {
+    std::vector<ShaderDataStructs::VertexData> points{};
+    //    points.reserve(dimensionX * dimensionY);
+    //    for (std::size_t x = 0; x < dimensionX; ++x) {
+    //        for (std::size_t y = 0; y < dimensionY; ++y) {
+    //
+    //        }
+    //    }
+    points.push_back({{0.0f, 0.0f}});
+    points.push_back({{0.0f, 1.0f}});
+    points.push_back({{1.0f, 0.0f}});
+
+    points.push_back({{1.0f, 0.0f}});
+    points.push_back({{0.0f, 1.0f}});
+    points.push_back({{1.0f, 1.0f}});
+
+    VkResult status;
+    VkBufferCreateInfo vertexBufferCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    vertexBufferCreateInfo.size = points.size() * sizeof(ShaderDataStructs::VertexData);
+    vertexBufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    vertexBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vertexBufferCreateInfo.queueFamilyIndexCount = 0;
+    vertexBufferCreateInfo.pQueueFamilyIndices = nullptr;
+    status = vkCreateBuffer(this->device, &vertexBufferCreateInfo,
+                            this->allocator, &this->loadReadBuffer);
+    if (status != VK_SUCCESS) return status;
+    VkMemoryRequirements vertexBufferMemReq{};
+    vkGetBufferMemoryRequirements(this->device, this->vertexBuffer, &vertexBufferMemReq);
+
+
+    VkMemoryAllocateInfo vertexBufferMemoryCreateInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    vertexBufferMemoryCreateInfo.allocationSize = vertexBufferMemReq.size;
+    vertexBufferMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(vertexBufferMemReq,
+                                                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    status = vkAllocateMemory(this->device, &vertexBufferMemoryCreateInfo,
+                              this->allocator, &this->vertexBufferMemory);
+    vkBindBufferMemory(this->device, this->vertexBuffer, this->vertexBufferMemory, 0);
+
+    void *mappedData = nullptr;
+    status = vkMapMemory(this->device, this->fromStrokeMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
+    if (status != VK_SUCCESS) return status;
+    memcpy(mappedData, points.data(), points.size() * sizeof(ShaderDataStructs::VertexData));
+    vkUnmapMemory(this->device, this->fromStrokeMemory);
+
+    return status;
 }
