@@ -335,7 +335,6 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
 
     status = this->uploadResources(image);
     if (status != VK_SUCCESS) return status;
-    this->bindResources();
 
     uint32_t dOffset = 0;
     vkCmdBindDescriptorSets(this->commandBuffer,
@@ -347,15 +346,20 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
                             1,
                             &dOffset);//TODO: caution
 
+    this->bindResources();
+
     ShaderDataStructs::MorphingSettings morphingSettings{};
     morphingSettings.strokeElementsCount = fromStroke.size();
-
     vkCmdPushConstants(this->commandBuffer, this->pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataStructs::MorphingSettings),
                        &morphingSettings);
 
     VkDeviceSize vertexBufferOffset = 0;
     //    vkCmdBindVertexBuffers(this->commandBuffer, 0, 1, &this->cubeVertexBuffer, &vertexBufferOffset);
+
+    this->readbackPrepareResources();
+
+    //TODO: readback;
 
     this->releaseResources();
 
@@ -843,4 +847,29 @@ void CMTVulkanBackend::bindResources() noexcept {
     vkUpdateDescriptorSets(this->device,
                            ARR_ELEM_COUNT(descriptorWrites), descriptorWrites,
                            0, nullptr);
+}
+VkResult CMTVulkanBackend::readbackPrepareResources() noexcept {
+    VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    barrier.srcQueueFamilyIndex = this->queueIndex;
+    barrier.dstQueueFamilyIndex = this->queueIndex;
+    barrier.image = this->resultImage;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+
+
+    vkCmdPipelineBarrier(this->commandBuffer,
+                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         0,
+                         0, nullptr,
+                         0, nullptr,
+                         1, &barrier);
+    return VK_SUCCESS;
 }

@@ -89,6 +89,7 @@ private:
     void releaseResources() noexcept;
     VkResult createPSO(const Image& image) noexcept;
     VkResult uploadResources(const Image& image) noexcept;
+    VkResult readbackPrepareResources() noexcept;
     void bindResources() noexcept;
 protected:
     std::uint32_t findMemoryType(const VkMemoryRequirements &memoryRequirements,
