@@ -26,6 +26,7 @@ public:
     Image(const QSize &size, Format format);
     Image(int width, int height, Format format);
     explicit Image(const QString &fileName, const char *format = nullptr);
+    explicit Image(const QImage& reference);
     Image(const Image &reference);
     ~Image() override;
 };

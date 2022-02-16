@@ -24,8 +24,8 @@ const char* Document::LOAD_EVENT = "load";
 const char* Document::UNLOAD_EVENT = "close";
 
 Document::Document() {
-    this->_image = new Image{R"(D:\Projects\image-morphing-tool\cmake-build-debug-qt\images\tiger.png)"};
-    QImage::Format::Format_RGBA8888;
+    QImage img{R"(D:\Projects\image-morphing-tool\cmake-build-debug-qt\images\tiger.png)"};
+    this->_image = new Image(img.convertToFormat(QImage::Format::Format_RGBA8888));
     assert(!this->_image->isNull());
 }
 

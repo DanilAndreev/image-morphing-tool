@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 
+
 #define ARR_ELEM_COUNT(arr) sizeof(arr) / sizeof(arr[0])
 
 namespace ShaderDataStructs {
@@ -322,6 +323,8 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     VkResult status;
     status = this->allocateResources(image, fromStroke, toStroke);
     if (status != VK_SUCCESS) return status;
+    status = this->initializeRenderer();
+    if (status != VK_SUCCESS) return status;
 
     VkFramebufferCreateInfo framebufferCreateInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     framebufferCreateInfo.renderPass = this->renderPass;
@@ -334,16 +337,14 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
                                  this->allocator, &this->framebuffer);
     if (status != VK_SUCCESS) return status;
 
-
-    status = this->initializeRenderer();
-    if (status != VK_SUCCESS) return status;
     status = this->createPSO(image);
     if (status != VK_SUCCESS) return status;
 
     VkCommandBufferBeginInfo commandBufferBeginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     commandBufferBeginInfo.pInheritanceInfo = nullptr;
-    vkBeginCommandBuffer(this->commandBuffer, &commandBufferBeginInfo);
+    status = vkBeginCommandBuffer(this->commandBuffer, &commandBufferBeginInfo);
+    if (status != VK_SUCCESS) return status;
     vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline);
 
     status = this->uploadResources(image);
@@ -395,6 +396,7 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     vkCmdDraw(this->commandBuffer, 6, 1, 0, 0);
 
     vkCmdEndRenderPass(this->commandBuffer);
+    this->readbackPrepareResources(image);
     vkEndCommandBuffer(this->commandBuffer);
 
     VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
@@ -406,7 +408,6 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     submitInfo.signalSemaphoreCount = 0;
     submitInfo.pSignalSemaphores = nullptr;
 
-    this->readbackPrepareResources();
     vkQueueSubmit(this->deviceQueue, 1, &submitInfo, VK_NULL_HANDLE);
 
     vkQueueWaitIdle(this->deviceQueue);//TODO: semaphore
@@ -968,7 +969,7 @@ VkResult CMTVulkanBackend::generateGrid(std::size_t dimensionX, std::size_t dime
     vertexBufferCreateInfo.queueFamilyIndexCount = 0;
     vertexBufferCreateInfo.pQueueFamilyIndices = nullptr;
     status = vkCreateBuffer(this->device, &vertexBufferCreateInfo,
-                            this->allocator, &this->loadReadBuffer);
+                            this->allocator, &this->vertexBuffer);
     if (status != VK_SUCCESS) return status;
     VkMemoryRequirements vertexBufferMemReq{};
     vkGetBufferMemoryRequirements(this->device, this->vertexBuffer, &vertexBufferMemReq);
@@ -1002,9 +1003,19 @@ VkResult CMTVulkanBackend::readbackResources(Image& image) noexcept {
     invalidateRange.size = VK_WHOLE_SIZE;
     status = vkInvalidateMappedMemoryRanges(this->device, 1, &invalidateRange);
     if (status != VK_SUCCESS) return status;
+    auto imageData = reinterpret_cast<const uint32_t*>(mappedData);
 
-    unsigned char *imageData = image.bits();
-    memcpy(imageData, mappedData, image.sizeInBytes());//todo: careful
+    for (size_t x = 0; x < 100; ++x) {
+        for (size_t y = 0; y < 100; ++y) {
+            uint32_t packed = imageData[x * image.width() + y];
+            unsigned char r = packed >> 0;
+            unsigned char g = packed >> 8;
+            unsigned char b = packed >> 16;
+            unsigned char a = packed >> 24;
+            image.setPixelColor(QPoint(x, y), QColor{r, g, b});
+        }
+    }
+
 
     vkUnmapMemory(this->device, this->toStrokeMemory);
 

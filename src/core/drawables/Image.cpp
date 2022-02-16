@@ -27,3 +27,4 @@ Image::Image(const QString &fileName, const char *format) : QImage(fileName, for
 Image::Image(const Image &reference): QImage(reference), events::event_emitter() {}
 
 Image::~Image() {}
+Image::Image(const QImage &reference) : QImage(reference) {}
