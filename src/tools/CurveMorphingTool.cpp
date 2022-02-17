@@ -137,6 +137,7 @@ void CurveMorphingTool::keyPressEventHandler(VKeyEvent &event) {
         case Qt::Key::Key_Return:
             this->backend.execute(this->_application->document()->image(),
                                   this->strokeFrom, this->strokeTo);
+//            this->_application->getMainWindow().getViewport()->repaint();
             break;
     }
 }

@@ -78,6 +78,8 @@ target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
 
 # -------------------------------------------------- Include event_emitter lib
 include_directories(${PROJECT_SOURCE_DIR}/libs/event_emitter/include)
+# -------------------------------------------------- Include render_doc lib
+include_directories(${PROJECT_SOURCE_DIR}/libs/render_doc/include)
 
 # -------------------------------------------------- Copy GLSL shaders sources
 file(COPY ${PROJECT_SOURCE_DIR}/shaders DESTINATION ${PROJECT_BINARY_DIR})
@@ -90,7 +92,7 @@ endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
 add_compile_definitions(NOMINMAX=1)
 
-target_link_options(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++)
+target_link_options(${PROJECT_NAME} PUBLIC -static-libgcc -static-libstdc++)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 add_custom_target(imt_pre_build
