@@ -1038,13 +1038,13 @@ VkResult CMTVulkanBackend::readbackResources(Image &image) noexcept {
     void *mappedData = nullptr;
     status = vkMapMemory(this->device, this->loadReadBufferMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
     if (status != VK_SUCCESS) return status;
-//    VkMappedMemoryRange invalidateRange{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
-//    invalidateRange.memory = this->loadReadBufferMemory;
-//    invalidateRange.offset = 0;
-//    invalidateRange.size = VK_WHOLE_SIZE;
-//    status = vkInvalidateMappedMemoryRanges(this->device, 1, &invalidateRange);
+    VkMappedMemoryRange invalidateRange{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+    invalidateRange.memory = this->loadReadBufferMemory;
+    invalidateRange.offset = 0;
+    invalidateRange.size = VK_WHOLE_SIZE;
+    status = vkInvalidateMappedMemoryRanges(this->device, 1, &invalidateRange);
     if (status != VK_SUCCESS) return status;
-    auto imageData = reinterpret_cast<const uint32_t *>(mappedData);
+    auto imageData = static_cast<const uint32_t *>(mappedData);
 
     for (size_t x = 0; x < image.width(); ++x) {
         for (size_t y = 0; y < image.height(); ++y) {
