@@ -388,10 +388,10 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
 
     VkClearValue colorClearValue{};
     colorClearValue.color = {};
-    colorClearValue.color.float32[0] = 0.2f;
-    colorClearValue.color.float32[1] = 0.2f;
-    colorClearValue.color.float32[2] = 0.2f;
-    colorClearValue.color.float32[3] = 0.2f;
+    colorClearValue.color.float32[0] = 0.0f;
+    colorClearValue.color.float32[1] = 0.0f;
+    colorClearValue.color.float32[2] = 0.0f;
+    colorClearValue.color.float32[3] = 0.0f;
 
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -410,7 +410,7 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     vkCmdBindVertexBuffers(this->commandBuffer, 0, 1,
                            &this->vertexBuffer, &vertexBufferOffset);
 
-    vkCmdDraw(this->commandBuffer, 6, 1, 0, 0);
+    vkCmdDraw(this->commandBuffer, this->pointsToDraw, 1, 0, 0);
 
     vkCmdEndRenderPass(this->commandBuffer);
     this->readbackPrepareResources(image);
@@ -1030,21 +1030,32 @@ VkResult CMTVulkanBackend::readbackPrepareResources(const Image &image) noexcept
     return VK_SUCCESS;
 }
 
-VkResult CMTVulkanBackend::generateGrid(std::size_t dimensionX, std::size_t dimensionY) noexcept {
+VkResult CMTVulkanBackend::generateGrid(std::size_t divisionsX, std::size_t divisionsY) noexcept {
     std::vector<ShaderDataStructs::VertexData> points{};
-    //    points.reserve(dimensionX * dimensionY);
-    //    for (std::size_t x = 0; x < dimensionX; ++x) {
-    //        for (std::size_t y = 0; y < dimensionY; ++y) {
-    //
-    //        }
-    //    }
-    points.push_back({{0.0f, 0.0f}});
-    points.push_back({{0.0f, 1.0f}});
-    points.push_back({{1.0f, 0.0f}});
+    points.reserve(divisionsX * divisionsY);
+    float stepX = 1.0f / static_cast<float>(divisionsX);
+    float stepY = 1.0f / static_cast<float>(divisionsY);
 
-    points.push_back({{1.0f, 0.0f}});
-    points.push_back({{0.0f, 1.0f}});
-    points.push_back({{1.0f, 1.0f}});
+    for (std::size_t x = 0; x < divisionsX; ++x) {
+        for (std::size_t y = 0; y < divisionsY; ++y) {
+            glm::vec2 pos{static_cast<float>(x) * stepX, static_cast<float>(y) * stepY};
+            points.push_back({pos + glm::vec2(0.0f, 0.0f)});
+            points.push_back({pos + glm::vec2(0.0f, stepY)});
+            points.push_back({pos + glm::vec2(stepX, 0.0f)});
+
+            points.push_back({pos + glm::vec2(stepX, 0.0f)});
+            points.push_back({pos + glm::vec2(0.0f, stepY)});
+            points.push_back({pos + glm::vec2(stepX, stepY)});
+        }
+    }
+    this->pointsToDraw = points.size();
+//    points.push_back({{0.0f, 0.0f}});
+//    points.push_back({{0.0f, 1.0f}});
+//    points.push_back({{1.0f, 0.0f}});
+//
+//    points.push_back({{1.0f, 0.0f}});
+//    points.push_back({{0.0f, 1.0f}});
+//    points.push_back({{1.0f, 1.0f}});
 
     VkResult status;
     VkBufferCreateInfo vertexBufferCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -1101,7 +1112,7 @@ VkResult CMTVulkanBackend::readbackResources(Image &image) noexcept {
             unsigned char g = packed >> 8;
             unsigned char b = packed >> 16;
             unsigned char a = packed >> 24;
-            image.setPixelColor(QPoint(x, y), QColor{r, g, b});
+            image.setPixelColor(QPoint(x, y), QColor{r, g, b, a});
         }
     }
 
