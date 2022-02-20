@@ -368,6 +368,7 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     status = this->uploadResources(image);
     if (status != VK_SUCCESS) return status;
 
+    this->bindResources();
     vkCmdBindDescriptorSets(this->commandBuffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             this->pipelineLayout,
@@ -377,7 +378,6 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
                             0,
                             nullptr);
 
-    this->bindResources();
 
     ShaderDataStructs::MorphingSettings morphingSettings{};
     morphingSettings.strokeElementsCount = fromStroke.size();
@@ -388,10 +388,10 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
 
     VkClearValue colorClearValue{};
     colorClearValue.color = {};
-    colorClearValue.color.float32[0] = 0.0f;
-    colorClearValue.color.float32[1] = 0.0f;
-    colorClearValue.color.float32[2] = 0.0f;
-    colorClearValue.color.float32[3] = 0.0f;
+    colorClearValue.color.float32[0] = 0.2f;
+    colorClearValue.color.float32[1] = 0.2f;
+    colorClearValue.color.float32[2] = 0.2f;
+    colorClearValue.color.float32[3] = 0.2f;
 
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -749,12 +749,12 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
     rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
     rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
-    rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizationStateCreateInfo.depthBiasClamp = VK_FALSE;
     rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
     rasterizationStateCreateInfo.depthBiasClamp = 0.0f;
     rasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
-    rasterizationStateCreateInfo.lineWidth = 1.0f;
+    rasterizationStateCreateInfo.lineWidth = 5.0f;
 
     //----
     VkPipelineColorBlendStateCreateInfo cb{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
@@ -1085,15 +1085,12 @@ VkResult CMTVulkanBackend::readbackResources(Image &image) noexcept {
     void *mappedData = nullptr;
     status = vkMapMemory(this->device, this->loadReadBufferMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
     if (status != VK_SUCCESS) return status;
-//    VkMappedMemoryRange invalidateRange{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
-//    invalidateRange.memory = this->loadReadBufferMemory;
-//    invalidateRange.offset = 0;
-//    invalidateRange.size = VK_WHOLE_SIZE;
-//    status = vkInvalidateMappedMemoryRanges(this->device, 1, &invalidateRange);
-//    if (status != VK_SUCCESS) return status;
-    std::vector<uint32_t> dd{};
-    dd.resize(image.width() * image.height());
-    memcpy(dd.data(), mappedData, dd.size() * sizeof(uint32_t));
+    VkMappedMemoryRange invalidateRange{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+    invalidateRange.memory = this->loadReadBufferMemory;
+    invalidateRange.offset = 0;
+    invalidateRange.size = VK_WHOLE_SIZE;
+    status = vkInvalidateMappedMemoryRanges(this->device, 1, &invalidateRange);
+    if (status != VK_SUCCESS) return status;
 
     auto imageData = static_cast<const uint32_t *>(mappedData);
 
@@ -1104,9 +1101,6 @@ VkResult CMTVulkanBackend::readbackResources(Image &image) noexcept {
             unsigned char g = packed >> 8;
             unsigned char b = packed >> 16;
             unsigned char a = packed >> 24;
-            if (packed) {
-                printf("AAAAA");
-            }
             image.setPixelColor(QPoint(x, y), QColor{r, g, b});
         }
     }
