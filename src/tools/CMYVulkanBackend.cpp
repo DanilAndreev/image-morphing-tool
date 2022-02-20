@@ -21,6 +21,7 @@
 #include <renderdoc_app.h>
 
 #include <libloaderapi.h>
+#include <QtGui>
 
 #define ARR_ELEM_COUNT(arr) sizeof(arr) / sizeof(arr[0])
 
@@ -136,9 +137,9 @@ VkResult CMTVulkanBackend::initialize() noexcept {
     status = vkAllocateDescriptorSets(this->device, &setAllocateInfo, this->descriptorSets.data());
     if (status != VK_SUCCESS) return status;
 
-    for (const VkDescriptorSetLayout &setLayout: setLayouts) {
-        vkDestroyDescriptorSetLayout(this->device, setLayout, this->allocator);
-    }
+//    for (const VkDescriptorSetLayout &setLayout: setLayouts) {
+//        vkDestroyDescriptorSetLayout(this->device, setLayout, this->allocator);
+//    }
 
     return VK_SUCCESS;
 }
@@ -227,12 +228,12 @@ VkResult CMTVulkanBackend::initializeRenderer() noexcept {
     attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+    attachment.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     attachments.push_back(attachment);
 
     std::vector<VkSubpassDescription> subpasses{};
     std::vector<VkAttachmentReference> attachmentReferences = {
-            {0, VK_IMAGE_LAYOUT_GENERAL},
+            {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
     };
 
     VkSubpassDescription subpassDescription{};
@@ -334,6 +335,10 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     if (rdoc_api) rdoc_api->StartFrameCapture(NULL, NULL);
 
     VkResult status;
+    VkFenceCreateInfo fenceCreateInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+    VkFence jobFence = VK_NULL_HANDLE;
+    status = vkCreateFence(this->device, &fenceCreateInfo, this->allocator, &jobFence);
+
     status = this->allocateResources(image, fromStroke, toStroke);
     if (status != VK_SUCCESS) return status;
     status = this->initializeRenderer();
@@ -363,15 +368,14 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     status = this->uploadResources(image);
     if (status != VK_SUCCESS) return status;
 
-    uint32_t dOffset = 0;
     vkCmdBindDescriptorSets(this->commandBuffer,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             this->pipelineLayout,
                             0,
                             this->descriptorSets.size(),
                             this->descriptorSets.data(),
-                            1,
-                            &dOffset);//TODO: caution
+                            0,
+                            nullptr);
 
     this->bindResources();
 
@@ -421,12 +425,15 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     submitInfo.signalSemaphoreCount = 0;
     submitInfo.pSignalSemaphores = nullptr;
 
-    vkQueueSubmit(this->deviceQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueSubmit(this->deviceQueue, 1, &submitInfo, jobFence);
 
-    vkQueueWaitIdle(this->deviceQueue);//TODO: semaphore
+//    vkQueueWaitIdle(this->deviceQueue);//TODO: semaphore
+    vkWaitForFences(this->device, 1, &jobFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
     this->readbackResources(image);
     this->releaseResources();
+
+    vkDestroyFence(this->device, jobFence, this->allocator);
 
     if (rdoc_api) rdoc_api->EndFrameCapture(NULL, NULL);
     return VK_SUCCESS;
@@ -473,6 +480,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     status = vkAllocateMemory(this->device, &strokeSSBOMemoryCreateInfo,
                               this->allocator, &this->fromStrokeMemory);
     if (status != VK_SUCCESS) return status;
+    this->setDebugName(this->fromStrokeMemory, "fromStrokeMemory");
 
     strokeSSBOMemoryCreateInfo.allocationSize = strokeToSSBOMemReq.size;
     strokeSSBOMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(strokeToSSBOMemReq,
@@ -481,6 +489,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     status = vkAllocateMemory(this->device, &strokeSSBOMemoryCreateInfo,
                               this->allocator, &this->toStrokeMemory);
     if (status != VK_SUCCESS) return status;
+    this->setDebugName(this->toStrokeMemory, "toStrokeMemory");
 
     void *mappedData = nullptr;
     status = vkMapMemory(this->device, this->fromStrokeMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
@@ -537,6 +546,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     status = vkAllocateMemory(this->device, &textureMemoryCreateInfo,
                               this->allocator, &this->sourceImageMemory);
     if (status != VK_SUCCESS) return status;
+    this->setDebugName(this->sourceImageMemory, "sourceImageMemory");
 
     textureMemoryCreateInfo.allocationSize = resultTextureMemReq.size;
     textureMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(resultTextureMemReq,
@@ -544,6 +554,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     status = vkAllocateMemory(this->device, &textureMemoryCreateInfo,
                               this->allocator, &this->resultImageMemory);
     if (status != VK_SUCCESS) return status;
+    this->setDebugName(this->resultImageMemory, "toStrokeMemory");
 
     status = vkBindImageMemory(this->device, this->sourceImage, this->sourceImageMemory, 0);
     if (status != VK_SUCCESS) return status;
@@ -617,6 +628,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     status = vkAllocateMemory(this->device, &loadReadBufferMemoryCreateInfo,
                               this->allocator, &this->loadReadBufferMemory);
     if (status != VK_SUCCESS) return status;
+    this->setDebugName(this->loadReadBufferMemory, "loadReadBufferMemory");
     status = vkBindBufferMemory(this->device, this->loadReadBuffer, this->loadReadBufferMemory, 0);
     if (status != VK_SUCCESS) return status;
     this->setDebugName(this->loadReadBuffer, "loadReadBuffer");
@@ -854,7 +866,6 @@ VkResult CMTVulkanBackend::uploadResources(const Image &image) noexcept {
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = 1;
 
-
     vkCmdPipelineBarrier(this->commandBuffer,
                          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                          VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -862,6 +873,24 @@ VkResult CMTVulkanBackend::uploadResources(const Image &image) noexcept {
                          0, nullptr,
                          0, nullptr,
                          1, &barrier);
+
+    VkBufferMemoryBarrier bufferBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+    bufferBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+    bufferBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferBarrier.buffer = this->loadReadBuffer;
+    bufferBarrier.offset = 0;
+    bufferBarrier.size = VK_WHOLE_SIZE;
+
+
+    vkCmdPipelineBarrier(this->commandBuffer,
+                         VK_PIPELINE_STAGE_HOST_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         0,
+                         0, nullptr,
+                         1, &bufferBarrier,
+                         0, nullptr);
 
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
@@ -931,12 +960,12 @@ void CMTVulkanBackend::bindResources() noexcept {
 }
 VkResult CMTVulkanBackend::readbackPrepareResources(const Image &image) noexcept {
     VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    barrier.srcQueueFamilyIndex = this->queueIndex;
-    barrier.dstQueueFamilyIndex = this->queueIndex;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = this->resultImage;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseArrayLayer = 0;
@@ -944,14 +973,30 @@ VkResult CMTVulkanBackend::readbackPrepareResources(const Image &image) noexcept
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = 1;
 
-
     vkCmdPipelineBarrier(this->commandBuffer,
-                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                          VK_PIPELINE_STAGE_TRANSFER_BIT,
                          0,
                          0, nullptr,
                          0, nullptr,
                          1, &barrier);
+
+    VkBufferMemoryBarrier bufferBarrier{VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+    bufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    bufferBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferBarrier.buffer = this->loadReadBuffer;
+    bufferBarrier.offset = 0;
+    bufferBarrier.size = VK_WHOLE_SIZE;
+
+    vkCmdPipelineBarrier(this->commandBuffer,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         0,
+                         0, nullptr,
+                         1, &bufferBarrier,
+                         0, nullptr);
 
 
     VkBufferImageCopy bufferImageCopy{};
@@ -1022,6 +1067,8 @@ VkResult CMTVulkanBackend::generateGrid(std::size_t dimensionX, std::size_t dime
                                                                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     status = vkAllocateMemory(this->device, &vertexBufferMemoryCreateInfo,
                               this->allocator, &this->vertexBufferMemory);
+    if (status != VK_SUCCESS) return status;
+    this->setDebugName(this->vertexBufferMemory, "vertexBufferMemory");
     vkBindBufferMemory(this->device, this->vertexBuffer, this->vertexBufferMemory, 0);
     this->setDebugName(this->vertexBuffer, "vertexBuffer");
 
@@ -1038,16 +1085,20 @@ VkResult CMTVulkanBackend::readbackResources(Image &image) noexcept {
     void *mappedData = nullptr;
     status = vkMapMemory(this->device, this->loadReadBufferMemory, 0, VK_WHOLE_SIZE, 0, &mappedData);
     if (status != VK_SUCCESS) return status;
-    VkMappedMemoryRange invalidateRange{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
-    invalidateRange.memory = this->loadReadBufferMemory;
-    invalidateRange.offset = 0;
-    invalidateRange.size = VK_WHOLE_SIZE;
-    status = vkInvalidateMappedMemoryRanges(this->device, 1, &invalidateRange);
-    if (status != VK_SUCCESS) return status;
+//    VkMappedMemoryRange invalidateRange{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+//    invalidateRange.memory = this->loadReadBufferMemory;
+//    invalidateRange.offset = 0;
+//    invalidateRange.size = VK_WHOLE_SIZE;
+//    status = vkInvalidateMappedMemoryRanges(this->device, 1, &invalidateRange);
+//    if (status != VK_SUCCESS) return status;
+    std::vector<uint32_t> dd{};
+    dd.resize(image.width() * image.height());
+    memcpy(dd.data(), mappedData, dd.size() * sizeof(uint32_t));
+
     auto imageData = static_cast<const uint32_t *>(mappedData);
 
-    for (size_t x = 0; x < image.width(); ++x) {
-        for (size_t y = 0; y < image.height(); ++y) {
+    for (size_t y = 0; y < image.height(); ++y) {
+        for (size_t x = 0; x < image.width(); ++x) {
             uint32_t packed = imageData[y * image.width() + x];
             unsigned char r = packed >> 0;
             unsigned char g = packed >> 8;
@@ -1083,6 +1134,16 @@ void CMTVulkanBackend::setDebugName(VkImage image, const char *name) const noexc
     VkDebugUtilsObjectNameInfoEXT info{VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     info.objectType = VK_OBJECT_TYPE_IMAGE;
     info.objectHandle = reinterpret_cast<uint64_t>(image);
+    info.pObjectName = name;
+    vkSetDebugUtilsObjectNameEXT(this->device, &info);
+#endif//IMT_DEBUG
+}
+void CMTVulkanBackend::setDebugName(VkDeviceMemory memory, const char *name) const noexcept {
+#ifdef IMT_DEBUG
+    auto vkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(this->instance, "vkSetDebugUtilsObjectNameEXT"));
+    VkDebugUtilsObjectNameInfoEXT info{VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+    info.objectType = VK_OBJECT_TYPE_DEVICE_MEMORY;
+    info.objectHandle = reinterpret_cast<uint64_t>(memory);
     info.pObjectName = name;
     vkSetDebugUtilsObjectNameEXT(this->device, &info);
 #endif//IMT_DEBUG

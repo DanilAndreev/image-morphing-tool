@@ -103,6 +103,7 @@ protected:
                                  VkMemoryPropertyFlags preferredFlags = 0) noexcept;
     void setDebugName(VkBuffer buffer, const char* name) const noexcept;
     void setDebugName(VkImage image, const char* name) const noexcept;
+    void setDebugName(VkDeviceMemory memory, const char* name) const noexcept;
 };
 
 #endif//IMAGE_MORPHING_TOOL_CMT_VULKANBACKEND_H
