@@ -34,6 +34,15 @@ void main() {
         }
     }
 
+//    for (uint i = 0; i < morphingSettings.strokeElementsCount; ++i) {
+//        vec2 fromPoint = strokeFrom.points[i];
+//        vec2 toPoint = strokeTo.points[i];
+//        float myDistance = distance(fromPoint, position);
+//        if (myDistance < 0.1) {
+//            position = fromPoint;
+//        }
+//    }
+
     gl_Position = vec4(position, 0.0f, 1.0f);
     oTexCoord = vPosition;
 }

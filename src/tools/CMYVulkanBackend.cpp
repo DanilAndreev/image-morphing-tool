@@ -289,17 +289,17 @@ VkResult CMTVulkanBackend::createPipelineLayout(VkPipelineLayout *outPipelineLay
     strokeToSSBOLayoutBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding targetImageTextureLayoutBinding{};
-    strokeToSSBOLayoutBinding.binding = 2;
-    strokeToSSBOLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    strokeToSSBOLayoutBinding.descriptorCount = 1;
-    strokeToSSBOLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    strokeToSSBOLayoutBinding.pImmutableSamplers = nullptr;
+    targetImageTextureLayoutBinding.binding = 2;
+    targetImageTextureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    targetImageTextureLayoutBinding.descriptorCount = 1;
+    targetImageTextureLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    targetImageTextureLayoutBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding bindings[] = {strokeFromSSBOLayoutBinding,
                                                strokeToSSBOLayoutBinding,
                                                targetImageTextureLayoutBinding};
     VkDescriptorSetLayoutCreateInfo createInfoUniform{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    createInfoUniform.bindingCount = sizeof(bindings) / sizeof(bindings[0]);
+    createInfoUniform.bindingCount = ARR_ELEM_COUNT(bindings);
     createInfoUniform.pBindings = bindings;
 
     outSetLayouts->clear();
@@ -754,7 +754,7 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
     rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
     rasterizationStateCreateInfo.depthBiasClamp = 0.0f;
     rasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
-    rasterizationStateCreateInfo.lineWidth = 5.0f;
+    rasterizationStateCreateInfo.lineWidth = 1.0f;
 
     //----
     VkPipelineColorBlendStateCreateInfo cb{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
@@ -934,7 +934,7 @@ void CMTVulkanBackend::bindResources() noexcept {
     VkDescriptorBufferInfo toBufferInfo = {this->toStrokeBuffer, 0, VK_WHOLE_SIZE};
     VkWriteDescriptorSet toStrokeWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
     toStrokeWrite.dstSet = this->descriptorSets[0];
-    toStrokeWrite.dstBinding = 0;
+    toStrokeWrite.dstBinding = 1;
     toStrokeWrite.dstArrayElement = 0;
     toStrokeWrite.descriptorCount = 1;
     toStrokeWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
