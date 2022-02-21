@@ -451,7 +451,7 @@ static void fillStrokeData(const Stroke &stroke, const Image &canvas, glm::vec2 
 
 VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &strokeFrom, const Stroke &strokeTo) noexcept {
     VkBufferCreateInfo strokeSSBOCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    strokeSSBOCreateInfo.size = strokeFrom.size() * sizeof(std::uint32_t);
+    strokeSSBOCreateInfo.size = strokeFrom.size() * sizeof(glm::vec2);
     strokeSSBOCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     strokeSSBOCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     strokeSSBOCreateInfo.queueFamilyIndexCount = 0;
@@ -461,7 +461,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     status = vkCreateBuffer(this->device, &strokeSSBOCreateInfo,
                             this->allocator, &this->fromStrokeBuffer);
     if (status != VK_SUCCESS) return status;
-    strokeSSBOCreateInfo.size = strokeTo.size() * sizeof(std::uint32_t);
+    strokeSSBOCreateInfo.size = strokeTo.size() * sizeof(glm::vec2);
     status = vkCreateBuffer(this->device, &strokeSSBOCreateInfo,
                             this->allocator, &this->toStrokeBuffer);
     if (status != VK_SUCCESS) return status;
@@ -747,14 +747,14 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
     VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
     rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
-    rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_LINE;
     rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
     rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizationStateCreateInfo.depthBiasClamp = VK_FALSE;
     rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
     rasterizationStateCreateInfo.depthBiasClamp = 0.0f;
     rasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
-    rasterizationStateCreateInfo.lineWidth = 1.0f;
+    rasterizationStateCreateInfo.lineWidth = 2.0f;
 
     //----
     VkPipelineColorBlendStateCreateInfo cb{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};

@@ -105,7 +105,7 @@ void CurveMorphingTool::mouseReleaseEventHandler(VMouseEvent &event) {
         this->_application->history().makeSnapshot();
         Stroke stroke{this->currentStroke};
         StrokeManager manager{&stroke};
-        manager.setTargetSize(300).rebuild();
+        manager.setTargetSize(1).rebuild();
         if (this->firstStroke) {
             this->strokeFrom = stroke;
         } else {
