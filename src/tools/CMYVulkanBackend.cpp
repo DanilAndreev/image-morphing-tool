@@ -633,7 +633,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     if (status != VK_SUCCESS) return status;
     this->setDebugName(this->loadReadBuffer, "loadReadBuffer");
 
-    this->generateGrid(200, 200);//TODO: load resolution.
+    this->generateGrid(40, 40);//TODO: load resolution.
     return VK_SUCCESS;
 }
 
@@ -747,14 +747,14 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
     VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
     rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
-    rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_LINE;
     rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
     rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizationStateCreateInfo.depthBiasClamp = VK_FALSE;
     rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
     rasterizationStateCreateInfo.depthBiasClamp = 0.0f;
     rasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
-    rasterizationStateCreateInfo.lineWidth = 2.0f;
+    rasterizationStateCreateInfo.lineWidth = 1.0f;
 
     //----
     VkPipelineColorBlendStateCreateInfo cb{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
