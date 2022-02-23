@@ -25,36 +25,21 @@ float powerFunc(float value) {
 }
 
 void main() {
-//    vec2 position = vPosition;
-//    for (uint i = 0; i < morphingSettings.strokeElementsCount; ++i) {
-//        vec2 fromPoint = strokeFrom.points[i];
-//        vec2 toPoint = strokeTo.points[i];
-//
-//        float dragDistance = distance(fromPoint, toPoint);
-//        float myDistance = distance(fromPoint, vPosition);
-//        if (myDistance < dragDistance) {
-//            vec2 maxDistort = (toPoint - fromPoint) / 4.0f;
-//            float normalizedDistance = myDistance / dragDistance;
-//            float normalizedImpact = (cos(normalizedDistance*PI) + 1.0f) / 2.0f;
-//            position += maxDistort * normalizedImpact;
-//        }
-//    }
-
     vec2 position = vPosition;
     vec2 shift = vec2(0.0f, 0.0f);
+    bool isAffected = false;
     for (uint i = 0; i < morphingSettings.strokeElementsCount; ++i) {
         vec2 fromPoint = strokeFrom.points[i];
         vec2 toPoint = strokeTo.points[i];
 
-        float moveDistance = distance(fromPoint, toPoint);
-        float affectedPointDistance = distance(fromPoint, vPosition);
-        if (affectedPointDistance < toolMagnitude) {
-            float moveWeight = powerFunc(moveDistance / toolMagnitude);
+        float startPointDistance = distance(fromPoint, vPosition);
+        if (startPointDistance < toolMagnitude) {
+            isAffected = true;
+            float moveWeight = powerFunc(1.0f - (startPointDistance / toolMagnitude));
             shift += (toPoint - fromPoint) * moveWeight;
-            position += shift;
         }
     }
-    position = position * 2.0 - 1.0;
-    gl_Position = vec4(position, 0.0f, 1.0f);
+    position = (position + shift) * 2.0 - 1.0;
+    gl_Position = vec4(position, isAffected ? 0.5f : 0.0f, 1.0f);
     oTexCoord = vPosition;
 }
