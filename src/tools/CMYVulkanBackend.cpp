@@ -633,7 +633,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     if (status != VK_SUCCESS) return status;
     this->setDebugName(this->loadReadBuffer, "loadReadBuffer");
 
-    this->generateGrid(20, 20);//TODO: load resolution.
+    this->generateGrid(200, 200);//TODO: load resolution.
     return VK_SUCCESS;
 }
 

@@ -21,7 +21,7 @@ const float PI = 3.14159265359f;
 const float toolMagnitude = 0.1f;
 
 float powerFunc(float value) {
-    return value;
+    return cos(value * PI) / 2.0f + 0.5f;
 }
 
 void main() {
@@ -35,7 +35,8 @@ void main() {
         float startPointDistance = distance(fromPoint, vPosition);
         if (startPointDistance < toolMagnitude) {
             isAffected = true;
-            float moveWeight = powerFunc(1.0f - (startPointDistance / toolMagnitude));
+            float normalizedStrength = startPointDistance / toolMagnitude;
+            float moveWeight = powerFunc(normalizedStrength);
             shift += (toPoint - fromPoint) * moveWeight;
         }
     }
