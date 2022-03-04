@@ -29,8 +29,9 @@
 #include "core/history/History.h"
 #include "events/LogEvent.h"
 #include "core/drawables/Document.h"
+#include "core/Tool/ToolSnapshotEvents.h"
 
-class Application: public events::event_emitter {
+class Application: public events::event_emitter, protected ToolSnapshotEvents {
 public:
     static const char* LOG_EVENT;
 protected:
@@ -54,6 +55,9 @@ public:
     [[nodiscard]] MainWindow& getMainWindow() const;
     [[nodiscard]] History& history() noexcept;
     [[nodiscard]] Document* document() noexcept;
+public:
+    void snapshotCreateEventHandler(SnapshotCreateEvent& event) override;
+    void snapshotRestoreEventHandler(SnapshotRestoreEvent& event) override;
 };
 
 

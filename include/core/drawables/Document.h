@@ -20,6 +20,11 @@
 #include <event_emitter.h>
 
 #include "Image.h"
+#include "core/history/Memento.h"
+
+struct DocumentMemento : public Memento {
+    QImage image;
+};
 
 class Document : public events::event_emitter {
 public:
@@ -37,6 +42,7 @@ public:
     void redraw() noexcept;
 public:
     [[nodiscard]] Image& image() noexcept;
+    Image* swapImage(Image* nImage) noexcept;
 };
 
 

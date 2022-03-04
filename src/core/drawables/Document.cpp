@@ -19,6 +19,7 @@
 #include "core/drawables/Document.h"
 #include "events/DocumentRedrawEvent.h"
 
+
 const char* Document::REDRAW_EVENT = "redraw";
 const char* Document::LOAD_EVENT = "load";
 const char* Document::UNLOAD_EVENT = "close";
@@ -44,4 +45,10 @@ void Document::redraw() noexcept {
 
 Image &Document::image() noexcept {
     return *this->_image;
+}
+
+Image* Document::swapImage(Image* nImage) noexcept {
+    Image* oldImage = this->_image;
+    this->_image = nImage;
+    return oldImage;
 }

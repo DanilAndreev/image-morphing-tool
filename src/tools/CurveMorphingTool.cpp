@@ -128,6 +128,7 @@ void CurveMorphingTool::snapshotRestoreEventHandler(SnapshotRestoreEvent &event)
     this->strokeFrom = memento->strokeFrom;
     this->strokeTo = memento->strokeTo;
 }
+
 void CurveMorphingTool::keyPressEventHandler(VKeyEvent &event) {
     switch (event.key()) {
         case Qt::Key::Key_Space:
@@ -135,6 +136,7 @@ void CurveMorphingTool::keyPressEventHandler(VKeyEvent &event) {
             break;
         case Qt::Key::Key_Enter:
         case Qt::Key::Key_Return:
+            this->_application->history().makeSnapshot();
             this->backend.execute(this->_application->document()->image(),
                                   this->strokeFrom, this->strokeTo);
             event.queueRepaint();

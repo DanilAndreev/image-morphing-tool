@@ -22,6 +22,7 @@ const char* Application::LOG_EVENT = "log";
 
 Application::Application(QApplication* qApplication): registeredTools{}, qApplication(qApplication), _history(this) {
     this->_document = new Document{};
+    this->initialize(this);
     this->mainWindow = new MainWindow{this};
 }
 
@@ -40,6 +41,7 @@ Application::~Application() {
         tool->uninitialize(this);
     }
     delete this->mainWindow;
+    this->uninitialize(this);
     delete this->_document;
 }
 
@@ -64,4 +66,19 @@ void Application::log(const QString &message, LogEvent::LOG_LEVEL level) {
 
 Document *Application::document() noexcept {
     return this->_document;
+}
+
+void Application::snapshotCreateEventHandler(SnapshotCreateEvent& event) {
+    auto memento = new DocumentMemento{};
+    auto* targetImage = dynamic_cast<QImage*>(&this->document()->image());
+    if(!targetImage) return; //TODO: error to console.
+    memento->image = *targetImage;
+    event.snapshot->insert(std::make_pair("document", memento));
+}
+
+void Application::snapshotRestoreEventHandler(SnapshotRestoreEvent& event) {
+    auto memento = dynamic_cast<DocumentMemento *>(event.snapshot->at("document"));
+    auto oldImage = this->document()->swapImage(new Image{memento->image});
+    delete oldImage;
+    this->getMainWindow().getViewport()->canvas()->repaint();
 }
