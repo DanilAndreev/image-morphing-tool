@@ -28,6 +28,7 @@
 #include "core/Tool/ITool.h"
 #include "core/history/History.h"
 #include "events/LogEvent.h"
+#include "core/drawables/Document.h"
 
 class Application: public events::event_emitter {
 public:
@@ -37,6 +38,7 @@ protected:
     MainWindow* mainWindow;
     std::set<ITool*> registeredTools;
     History _history;
+    Document* _document;
 public:
     explicit Application(QApplication* qApplication);
     Application(const Application&) = delete;
@@ -51,6 +53,7 @@ public:
 public:
     [[nodiscard]] MainWindow& getMainWindow() const;
     [[nodiscard]] History& history() noexcept;
+    [[nodiscard]] Document* document() noexcept;
 };
 
 

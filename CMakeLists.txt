@@ -70,10 +70,33 @@ find_package(Qt${QT_VERSION} COMPONENTS ${REQUIRED_LIBS} REQUIRED)
 target_link_libraries(${PROJECT_NAME} ${REQUIRED_LIBS_QUALIFIED} ${OPENGL_LIBRARIES})
 loadQt6DllsIntoTarget(${PROJECT_NAME})
 
+# -------------------------------------------------- Vulkan
+find_package(Vulkan REQUIRED)
+target_include_directories(${PROJECT_NAME} PUBLIC "$ENV{VULKAN_SDK}/Third-Party/Include") # TODO: dont read from env
+target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
+
 # -------------------------------------------------- Include event_emitter lib
 include_directories(${PROJECT_SOURCE_DIR}/libs/event_emitter/include)
+# -------------------------------------------------- Include render_doc lib
+include_directories(${PROJECT_SOURCE_DIR}/libs/render_doc/include)
 
 # -------------------------------------------------- Copy GLSL shaders sources
-file(COPY ${PROJECT_SOURCE_DIR}/shaders DESTINATION ${PROJECT_BINARY_DIR})
+#file(COPY ${PROJECT_SOURCE_DIR}/shaders DESTINATION ${PROJECT_BINARY_DIR})
 #file(COPY ${PROJECT_SOURCE_DIR}/style DESTINATION ${PROJECT_BINARY_DIR})
 configure_file("${PROJECT_SOURCE_DIR}/style/style.qss" "${PROJECT_BINARY_DIR}/style/style.qss" COPYONLY)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC IMT_DEBUG=1)
+endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+
+add_compile_definitions(NOMINMAX=1)
+
+target_link_options(${PROJECT_NAME} PUBLIC -static-libgcc -static-libstdc++)
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_custom_target(imt_pre_build
+        COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/building/pre_build.py
+        USES_TERMINAL)
+add_dependencies(${PROJECT_NAME} imt_pre_build)
+target_include_directories(${PROJECT_NAME} PRIVATE src/tools/shaders/bin)

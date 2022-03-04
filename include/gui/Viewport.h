@@ -17,16 +17,19 @@
 #ifndef IMAGE_MORPHING_TOOL_VIEWPORT_H
 #define IMAGE_MORPHING_TOOL_VIEWPORT_H
 
-#include <QWidget>
+#include <QScrollArea>
 #include <QPaintEvent>
 #include <QPainter>
 #include <vector>
 #include <list>
 
+#include "Canvas.h"
 #include "core/Stroke/Stroke.h"
 #include "event_emitter.h"
 
-class Viewport : public QWidget, public events::event_emitter {
+class Application;
+
+class Viewport : public QScrollArea, public events::event_emitter {
 public:
     static const char* PAINT_EVENT;
 
@@ -40,19 +43,20 @@ public:
     static const char* KEY_PRESS_EVENT;
     static const char* KEY_RELEASE_EVENT;
 protected:
-    std::list<Stroke> strokes;
-    std::list<QPoint> currentStroke;
+    Canvas* _canvas;
+    Application* _application;
 public:
-    explicit Viewport(QWidget *parent = nullptr);
+    explicit Viewport(Application* application, QWidget *parent = nullptr);
     Viewport(const Viewport &reference) = delete;
     ~Viewport() override = default;
-protected:
-    void drawLines(QPainter &painter);
+public:
+    Canvas* canvas() noexcept;
 protected:
     void paintEvent(QPaintEvent *event) noexcept override;
     void mouseMoveEvent(QMouseEvent *event) noexcept override;
     void mousePressEvent(QMouseEvent *event) noexcept override;
     void mouseReleaseEvent(QMouseEvent *event) noexcept override;
+    void keyPressEvent(QKeyEvent *event) noexcept override;
 };
 
 

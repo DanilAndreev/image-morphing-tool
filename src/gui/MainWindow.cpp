@@ -27,7 +27,7 @@
 
 MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMainWindow(parent),
                                                                             application(application) {
-    this->viewport = new Viewport(this);
+    this->viewport = new Viewport(application, this);
     this->toolBar = new ToolBar(this);
     this->logWindow = new LogWindow(application);
     BottomLineWidget* bottomLineWidget = new BottomLineWidget{application, this};

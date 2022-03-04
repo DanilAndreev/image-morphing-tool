@@ -9,7 +9,7 @@
     border-bottom: 1px solid #424242;
 }
 
-*[qssClass~="MainWindowFileMenu"] {
+*[qssClass~="MenuList"] {
     background: #4c4c4c;
     color: #bbbbbb;
     border: 1px solid #424242;

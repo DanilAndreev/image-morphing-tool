@@ -25,8 +25,11 @@
 
 #include "core/Tool/ToolViewportEvents.h"
 #include "core/Tool/ToolSnapshotEvents.h"
+#include "core/Tool/ToolCanvasEvents.h"
 #include "core/Stroke/Stroke.h"
 #include "core/history/Memento.h"
+
+#include "CMTVulkanBackend.h"
 
 struct CurveMorphingToolMemento : public Memento {
     Stroke strokeFrom;
@@ -34,7 +37,7 @@ struct CurveMorphingToolMemento : public Memento {
 };
 
 
-class CurveMorphingTool : public ToolViewportEvents, public ToolSnapshotEvents {
+class CurveMorphingTool : public ToolViewportEvents, public ToolSnapshotEvents, public ToolCanvasEvents {
 public:
     std::mutex processLock;
     Stroke strokeFrom;
@@ -45,16 +48,20 @@ public:
 public:
     bool displayDirections = false;
     bool firstStroke = true;
+
+protected:
+    CMTVulkanBackend backend{};
 public:
     CurveMorphingTool() noexcept;
     virtual ~CurveMorphingTool() = default;
 public:
-    void paintEventHandler(VPaintEvent& event) override;
+    void canvasPaintEventHandler(CPaintEvent& event) override;
     void mouseMoveEventHandler(VMouseEvent& event) override;
     void mousePressEventHandler(VMouseEvent& event) override;
     void mouseReleaseEventHandler(VMouseEvent& event) override;
     void snapshotCreateEventHandler(SnapshotCreateEvent &event) override;
     void snapshotRestoreEventHandler(SnapshotRestoreEvent &event) override;
+    void keyPressEventHandler(VKeyEvent& event) override;
 public:
     void initialize(Application* application) override;
     void uninitialize(Application* application) noexcept override;
