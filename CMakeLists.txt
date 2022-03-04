@@ -82,7 +82,7 @@ include_directories(${PROJECT_SOURCE_DIR}/libs/event_emitter/include)
 include_directories(${PROJECT_SOURCE_DIR}/libs/render_doc/include)
 
 # -------------------------------------------------- Copy GLSL shaders sources
-file(COPY ${PROJECT_SOURCE_DIR}/shaders DESTINATION ${PROJECT_BINARY_DIR})
+#file(COPY ${PROJECT_SOURCE_DIR}/shaders DESTINATION ${PROJECT_BINARY_DIR})
 #file(COPY ${PROJECT_SOURCE_DIR}/style DESTINATION ${PROJECT_BINARY_DIR})
 configure_file("${PROJECT_SOURCE_DIR}/style/style.qss" "${PROJECT_BINARY_DIR}/style/style.qss" COPYONLY)
 
