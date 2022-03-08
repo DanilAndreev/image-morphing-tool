@@ -57,6 +57,7 @@ public:
     bool moveToSnapshot(std::size_t position);
     bool undo();
     bool redo();
+    void reset();
 private:
     static inline History::const_iterator moveIterator(History::const_iterator iter, std::size_t shift) noexcept;
     void eraseAndFree(const History::const_iterator &begin, const History::const_iterator &end) noexcept;

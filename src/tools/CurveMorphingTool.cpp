@@ -17,6 +17,9 @@
 #include "tools/CurveMorphingTool.h"
 
 #include <QPainter>
+#include <QPushButton>
+#include <QLayout>
+#include <QApplication>
 
 #include "core/Stroke/StrokeDrawer.h"
 #include "core/Stroke/StrokeManager.h"
@@ -29,6 +32,12 @@ void CurveMorphingTool::initialize(Application *application) {
     ToolCanvasEvents::initialize(application);
     this->_application = application;
     this->backend.initialize();//TODO: get status;
+
+    auto* button1 = new QPushButton{};
+    button1->setText("mode");
+
+    QLayout* layout = this->_application->getMainWindow().getToolBar()->layout();
+    layout->addWidget(button1);
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {

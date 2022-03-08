@@ -43,6 +43,10 @@ public:
 public:
     [[nodiscard]] Image& image() noexcept;
     Image* swapImage(Image* nImage) noexcept;
+
+public:
+    void loadImage(const QImage& image);
+    void loadImage(Image* image);
 };
 
 

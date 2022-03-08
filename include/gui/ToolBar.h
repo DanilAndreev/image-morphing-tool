@@ -18,6 +18,12 @@
 #define IMAGE_MORPHING_TOOL_TOOLBAR_H
 
 #include <QWidget>
+#include <QPushButton>
+
+class ToolBarButton : public QPushButton {
+public:
+
+};
 
 class ToolBar : public QWidget {
 public:

@@ -18,11 +18,12 @@
 
 #include "core/drawables/Document.h"
 #include "events/DocumentRedrawEvent.h"
+#include "core/exceptions/FileIOError.h"
 
 
-const char* Document::REDRAW_EVENT = "redraw";
-const char* Document::LOAD_EVENT = "load";
-const char* Document::UNLOAD_EVENT = "close";
+const char *Document::REDRAW_EVENT = "redraw";
+const char *Document::LOAD_EVENT = "load";
+const char *Document::UNLOAD_EVENT = "close";
 
 Document::Document() {
     QImage img{R"(C:\Projects\image-morphing-tool\cmake-build-debug-mingw-qt6\images\tiger.png)"};
@@ -47,8 +48,19 @@ Image &Document::image() noexcept {
     return *this->_image;
 }
 
-Image* Document::swapImage(Image* nImage) noexcept {
-    Image* oldImage = this->_image;
+Image *Document::swapImage(Image *nImage) noexcept {
+    Image *oldImage = this->_image;
     this->_image = nImage;
     return oldImage;
+}
+
+void Document::loadImage(const QImage& image) {
+    this->loadImage(new Image(image.convertToFormat(QImage::Format::Format_RGBA8888)));
+}
+
+void Document::loadImage(Image *image) {
+    if (image->isNull())
+        throw Exceptions::FileIOError("Failed to open image.");
+    delete this->_image;
+    this->_image = image;
 }

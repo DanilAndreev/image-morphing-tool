@@ -105,3 +105,10 @@ void History::eraseAndFree(const History::const_iterator &begin, const History::
     }
     this->erase(begin, end);
 }
+
+void History::reset() {
+    this->storageLock.lock();
+    this->_position = 0;
+    this->clear();
+    this->storageLock.unlock();
+}

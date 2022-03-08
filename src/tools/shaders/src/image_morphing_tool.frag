@@ -8,5 +8,5 @@ layout(set = 0, binding = 2) uniform sampler2D targetImage;
 
 void main() {
     fragColor = texture(targetImage, iTexCoord);
-    fragColor.a = 1.0f;
+    //fragColor.a = 1.0f;
 }
