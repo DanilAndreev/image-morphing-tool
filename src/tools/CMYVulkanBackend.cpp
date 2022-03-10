@@ -232,14 +232,14 @@ VkResult CMTVulkanBackend::initializeRenderer() noexcept {
     attachments.push_back(attachment);
 
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = VK_FORMAT_D16_UNORM;
+    depthAttachment.format = VK_FORMAT_D24_UNORM_S8_UINT;
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     attachments.push_back(depthAttachment);
 
     std::vector<VkSubpassDescription> subpasses{};
@@ -247,7 +247,7 @@ VkResult CMTVulkanBackend::initializeRenderer() noexcept {
             {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
     };
 
-    VkAttachmentReference depthReference = {1, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL};
+    VkAttachmentReference depthReference = {1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
     VkSubpassDescription subpassDescription{};
     subpassDescription.flags = 0;
@@ -263,6 +263,11 @@ VkResult CMTVulkanBackend::initializeRenderer() noexcept {
     subpasses.push_back(subpassDescription);
 
     std::vector<VkSubpassDependency> dependencies{};
+    VkSubpassDependency dependency{};
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependencies.push_back(dependency);
 
     VkRenderPassCreateInfo renderPassCreateInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
     renderPassCreateInfo.attachmentCount = attachments.size();
@@ -410,7 +415,8 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
 
     VkClearValue depthClearValue{};
     depthClearValue.depthStencil = {};
-    depthClearValue.depthStencil.depth = 0.0f;
+    depthClearValue.depthStencil.depth = 1.0f;
+    depthClearValue.depthStencil.stencil = 0;
 
     VkClearValue clearValues[] = {colorClearValue, depthClearValue};
 
@@ -554,9 +560,15 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
                            this->allocator, &this->resultImage);
     if (status != VK_SUCCESS) return status;
 
-    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     textureCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    textureCreateInfo.format = VK_FORMAT_D16_UNORM;
+    textureCreateInfo.format = VK_FORMAT_D24_UNORM_S8_UINT;
+    {
+        VkFormatProperties formatProperties;
+        vkGetPhysicalDeviceFormatProperties(this->physicalDevice, textureCreateInfo.format, &formatProperties);
+        assert(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    }
+
     status = vkCreateImage(this->device, &textureCreateInfo,
                            this->allocator, &this->depthImage);
     if (status != VK_SUCCESS) return status;
@@ -586,7 +598,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     if (status != VK_SUCCESS) return status;
     this->setDebugName(this->resultImageMemory, "resultImageMemory");
 
-    textureMemoryCreateInfo.allocationSize = resultTextureMemReq.size;
+    textureMemoryCreateInfo.allocationSize = depthTextureMemReq.size;
     textureMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(depthTextureMemReq,
                                                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     status = vkAllocateMemory(this->device, &textureMemoryCreateInfo,
@@ -610,10 +622,10 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     imageViewCreateInfo.image = this->sourceImage;
     imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     imageViewCreateInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-    imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
-    imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
-    imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
-    imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+    imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
     imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
     imageViewCreateInfo.subresourceRange.levelCount = 1;
@@ -631,7 +643,7 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
 
     imageViewCreateInfo.image = this->depthImage;
     imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    imageViewCreateInfo.format = VK_FORMAT_D16_UNORM;
+    imageViewCreateInfo.format = VK_FORMAT_D24_UNORM_S8_UINT;
     status = vkCreateImageView(this->device, &imageViewCreateInfo,
                                this->allocator, &this->depthImageView);
     if (status != VK_SUCCESS) return status;
@@ -796,7 +808,7 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
     rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
     rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
     rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
+    rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_FRONT_BIT;
     rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizationStateCreateInfo.depthBiasClamp = VK_FALSE;
     rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
@@ -835,8 +847,7 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
     ds.depthBoundsTestEnable = VK_FALSE;
     ds.stencilTestEnable = VK_FALSE;
     ds.minDepthBounds = 0.0f;
-    ds.maxDepthBounds = 1.0f;
-    ds.stencilTestEnable = VK_FALSE;
+    ds.maxDepthBounds = 0.0f;
     ds.front = {};
     ds.back = {};
 

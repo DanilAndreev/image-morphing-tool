@@ -2,6 +2,7 @@
 
 layout(location = 0) in vec2 vPosition;
 layout(location = 1) out vec2 oTexCoord;
+layout(location = 2) out float oDepth;
 
 layout(push_constant) uniform MorphingSettings {
     uint strokeElementsCount;
@@ -48,6 +49,7 @@ void main() {
     if (isAffected) shift /= float(affectedCount);
     vec2 position = uvToVertexSpace(vPosition + shift);
 
-    gl_Position = vec4(position, isAffected ? 0.5f : 0.0f, 1.0f);
+    gl_Position = vec4(position, isAffected ? 1.0f : 0.0f, 1.0f);
+    oDepth = gl_Position.z;
     oTexCoord = vPosition;
 }
