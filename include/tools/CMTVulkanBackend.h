@@ -59,6 +59,10 @@ private:
     VkImage resultImage = VK_NULL_HANDLE;
     VkImageView resultImageView = VK_NULL_HANDLE;
 
+    VkDeviceMemory depthImageMemory = VK_NULL_HANDLE;
+    VkImage depthImage = VK_NULL_HANDLE;
+    VkImageView depthImageView = VK_NULL_HANDLE;
+
     VkDeviceMemory fromStrokeMemory = VK_NULL_HANDLE;
     VkBuffer fromStrokeBuffer = VK_NULL_HANDLE;
 

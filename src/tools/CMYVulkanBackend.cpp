@@ -231,10 +231,23 @@ VkResult CMTVulkanBackend::initializeRenderer() noexcept {
     attachment.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     attachments.push_back(attachment);
 
+    VkAttachmentDescription depthAttachment{};
+    depthAttachment.format = VK_FORMAT_D24_UNORM_S8_UINT;
+    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    attachments.push_back(depthAttachment);
+
     std::vector<VkSubpassDescription> subpasses{};
     std::vector<VkAttachmentReference> attachmentReferences = {
             {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
     };
+
+    VkAttachmentReference depthReference = {1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
     VkSubpassDescription subpassDescription{};
     subpassDescription.flags = 0;
@@ -244,12 +257,17 @@ VkResult CMTVulkanBackend::initializeRenderer() noexcept {
     subpassDescription.colorAttachmentCount = attachmentReferences.size();
     subpassDescription.pColorAttachments = attachmentReferences.data();
     subpassDescription.pResolveAttachments = nullptr;
-    subpassDescription.pDepthStencilAttachment = nullptr;
+    subpassDescription.pDepthStencilAttachment = &depthReference;
     subpassDescription.preserveAttachmentCount = 0;
     subpassDescription.pPreserveAttachments = nullptr;
     subpasses.push_back(subpassDescription);
 
     std::vector<VkSubpassDependency> dependencies{};
+    VkSubpassDependency dependency{};
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependencies.push_back(dependency);
 
     VkRenderPassCreateInfo renderPassCreateInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
     renderPassCreateInfo.attachmentCount = attachments.size();
@@ -344,13 +362,15 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     status = this->initializeRenderer();
     if (status != VK_SUCCESS) return status;
 
+    VkImageView framebufferAttachments[] = {this->resultImageView, this->depthImageView};
+
     VkFramebufferCreateInfo framebufferCreateInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     framebufferCreateInfo.renderPass = this->renderPass;
     framebufferCreateInfo.width = image.width();
     framebufferCreateInfo.height = image.height();
     framebufferCreateInfo.layers = 1;
-    framebufferCreateInfo.attachmentCount = 1;
-    framebufferCreateInfo.pAttachments = &this->resultImageView;
+    framebufferCreateInfo.attachmentCount = ARRAYSIZE(framebufferAttachments);
+    framebufferCreateInfo.pAttachments = framebufferAttachments;
     status = vkCreateFramebuffer(this->device, &framebufferCreateInfo,
                                  this->allocator, &this->framebuffer);
     if (status != VK_SUCCESS) return status;
@@ -393,6 +413,13 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     colorClearValue.color.float32[2] = 0.0f;
     colorClearValue.color.float32[3] = 0.0f;
 
+    VkClearValue depthClearValue{};
+    depthClearValue.depthStencil = {};
+    depthClearValue.depthStencil.depth = 1.0f;
+    depthClearValue.depthStencil.stencil = 0;
+
+    VkClearValue clearValues[] = {colorClearValue, depthClearValue};
+
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.pNext = nullptr;
@@ -401,8 +428,8 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     renderPassBeginInfo.renderArea = {0, 0,
                                       static_cast<uint32_t>(image.width()),
                                       static_cast<uint32_t>(image.height())};
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = &colorClearValue;
+    renderPassBeginInfo.clearValueCount = ARRAYSIZE(clearValues);
+    renderPassBeginInfo.pClearValues = clearValues;
 
     vkCmdBeginRenderPass(this->commandBuffer, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
 
@@ -533,10 +560,25 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
                            this->allocator, &this->resultImage);
     if (status != VK_SUCCESS) return status;
 
+    textureCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    textureCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    textureCreateInfo.format = VK_FORMAT_D24_UNORM_S8_UINT;
+    {
+        VkFormatProperties formatProperties;
+        vkGetPhysicalDeviceFormatProperties(this->physicalDevice, textureCreateInfo.format, &formatProperties);
+        assert(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    }
+
+    status = vkCreateImage(this->device, &textureCreateInfo,
+                           this->allocator, &this->depthImage);
+    if (status != VK_SUCCESS) return status;
+
     VkMemoryRequirements sourceTextureMemReq{};
     vkGetImageMemoryRequirements(this->device, this->sourceImage, &sourceTextureMemReq);
     VkMemoryRequirements resultTextureMemReq{};
-    vkGetImageMemoryRequirements(this->device, this->sourceImage, &resultTextureMemReq);
+    vkGetImageMemoryRequirements(this->device, this->resultImage, &resultTextureMemReq);
+    VkMemoryRequirements depthTextureMemReq{};
+    vkGetImageMemoryRequirements(this->device, this->depthImage, &depthTextureMemReq);
 
     VkMemoryAllocateInfo textureMemoryCreateInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     textureMemoryCreateInfo.allocationSize = sourceTextureMemReq.size;
@@ -554,38 +596,56 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     status = vkAllocateMemory(this->device, &textureMemoryCreateInfo,
                               this->allocator, &this->resultImageMemory);
     if (status != VK_SUCCESS) return status;
-    this->setDebugName(this->resultImageMemory, "toStrokeMemory");
+    this->setDebugName(this->resultImageMemory, "resultImageMemory");
+
+    textureMemoryCreateInfo.allocationSize = depthTextureMemReq.size;
+    textureMemoryCreateInfo.memoryTypeIndex = this->findMemoryType(depthTextureMemReq,
+                                                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    status = vkAllocateMemory(this->device, &textureMemoryCreateInfo,
+                              this->allocator, &this->depthImageMemory);
+    if (status != VK_SUCCESS) return status;
+    this->setDebugName(this->depthImageMemory, "depthImageMemory");
 
     status = vkBindImageMemory(this->device, this->sourceImage, this->sourceImageMemory, 0);
     if (status != VK_SUCCESS) return status;
     status = vkBindImageMemory(this->device, this->resultImage, this->resultImageMemory, 0);
     if (status != VK_SUCCESS) return status;
+    status = vkBindImageMemory(this->device, this->depthImage, this->depthImageMemory, 0);
+    if (status != VK_SUCCESS) return status;
 
 
     this->setDebugName(this->sourceImage, "sourceImage");
     this->setDebugName(this->resultImage, "resultImage");
+    this->setDebugName(this->depthImage, "depthImage");
 
-    VkImageViewCreateInfo resultImageViewCreateInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-    resultImageViewCreateInfo.image = this->sourceImage;
-    resultImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    resultImageViewCreateInfo.format = textureCreateInfo.format;
-    resultImageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
-    resultImageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
-    resultImageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
-    resultImageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
-    resultImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    resultImageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-    resultImageViewCreateInfo.subresourceRange.levelCount = 1;
-    resultImageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    resultImageViewCreateInfo.subresourceRange.layerCount = 1;
+    VkImageViewCreateInfo imageViewCreateInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    imageViewCreateInfo.image = this->sourceImage;
+    imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+    imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+    imageViewCreateInfo.subresourceRange.levelCount = 1;
+    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    imageViewCreateInfo.subresourceRange.layerCount = 1;
 
-    status = vkCreateImageView(this->device, &resultImageViewCreateInfo,
+    status = vkCreateImageView(this->device, &imageViewCreateInfo,
                                this->allocator, &this->sourceImageView);
     if (status != VK_SUCCESS) return status;
 
-    resultImageViewCreateInfo.image = this->resultImage;
-    status = vkCreateImageView(this->device, &resultImageViewCreateInfo,
+    imageViewCreateInfo.image = this->resultImage;
+    status = vkCreateImageView(this->device, &imageViewCreateInfo,
                                this->allocator, &this->resultImageView);
+    if (status != VK_SUCCESS) return status;
+
+    imageViewCreateInfo.image = this->depthImage;
+    imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    imageViewCreateInfo.format = VK_FORMAT_D24_UNORM_S8_UINT;
+    status = vkCreateImageView(this->device, &imageViewCreateInfo,
+                               this->allocator, &this->depthImageView);
     if (status != VK_SUCCESS) return status;
 
     VkSamplerCreateInfo sourceSamplerCreateInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
@@ -748,7 +808,7 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
     rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
     rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
     rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
+    rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_FRONT_BIT;
     rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizationStateCreateInfo.depthBiasClamp = VK_FALSE;
     rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f;
@@ -787,8 +847,7 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
     ds.depthBoundsTestEnable = VK_FALSE;
     ds.stencilTestEnable = VK_FALSE;
     ds.minDepthBounds = 0.0f;
-    ds.maxDepthBounds = 1.0f;
-    ds.stencilTestEnable = VK_FALSE;
+    ds.maxDepthBounds = 0.0f;
     ds.front = {};
     ds.back = {};
 
