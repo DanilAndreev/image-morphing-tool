@@ -54,7 +54,7 @@ list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
 file(GLOB_RECURSE TEST_SOURCES "${PROJECT_SOURCE_DIR}/tests/*.test.cpp")
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
-add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES} "${PROJECT_SOURCE_DIR}/src/main.cpp" include/core/exceptions/FileIOError.h)
+add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES} "${PROJECT_SOURCE_DIR}/src/main.cpp" include/core/exceptions/FileIOError.h src/tools/shaders/ShadersFactory.cpp include/tools/shaders/ShadersFactory.h)
 
 if (NOT CMAKE_PREFIX_PATH)
     message(WARNING "CMAKE_PREFIX_PATH is not defined, you may need to set it "
@@ -76,8 +76,19 @@ target_include_directories(${PROJECT_NAME} PUBLIC "$ENV{VULKAN_SDK}/Third-Party/
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
 
+# -------------------------------------------------- Include glslang lib
+set(GLSLANG_LIBRARY_ROOT_PATH ${CMAKE_SOURCE_DIR}/libs/glslang)
+set(BUILD_TESTING OFF CACHE BOOL "Disable CTest" FORCE)
+set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "Disable binary app" FORCE)
+set(ENABLE_GLSLANG_JS OFF CACHE BOOL "Disable js" FORCE)
+set(ENABLE_GLSLANG_WEBMIN OFF CACHE BOOL "Disable glsl web" FORCE)
+add_subdirectory(${GLSLANG_LIBRARY_ROOT_PATH})
+target_include_directories(${PROJECT_NAME} PUBLIC ${GLSLANG_LIBRARY_ROOT_PATH}/glslang/include)
+target_link_libraries(${PROJECT_NAME} glslang SPIRV)
+
 # -------------------------------------------------- Include event_emitter lib
 include_directories(${PROJECT_SOURCE_DIR}/libs/event_emitter/include)
+
 # -------------------------------------------------- Include render_doc lib
 include_directories(${PROJECT_SOURCE_DIR}/libs/render_doc/include)
 

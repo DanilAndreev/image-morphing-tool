@@ -1,4 +1,4 @@
-// Copyright (c) 2022.
+// Copyright (c) 2022-2022.
 // License: CC0 1.0 Universal
 // Permissions:
 // - Commercial use
@@ -14,8 +14,9 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
-#include "SPIRVShaders.h"
+//#include "SPIRVShaders.h"
 #include "tools/CMTVulkanBackend.h"
+#include "tools/shaders/ShadersFactory.h"
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <renderdoc_app.h>
@@ -201,15 +202,19 @@ static VkResult createShaderModule(VkDevice device,
 }
 
 VkResult CMTVulkanBackend::initializeShaderModules() noexcept {
+    ShadersFactory shadersFactory{};
+    shadersFactory.loadFileOnPath("image_morphing_tool.vert");
+    std::vector<uint32_t> spirv = shadersFactory.getSPIRVfromGLSL(GLSLANG_STAGE_VERTEX);
+
     using ShaderBin_t = const uint32_t *;
     VkResult status;
-    status = createShaderModule(this->device, allocator,
-                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_vert),
-                                sizeof(image_morphing_tool_vert), &this->shaders.vertexShader);
-    if (status != VK_SUCCESS) return status;
-    status = createShaderModule(this->device, allocator,
-                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_frag),
-                                sizeof(image_morphing_tool_frag), &this->shaders.fragmentShader);
+//    status = createShaderModule(this->device, allocator,
+//                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_vert),
+//                                sizeof(image_morphing_tool_vert), &this->shaders.vertexShader);
+//    if (status != VK_SUCCESS) return status;
+//    status = createShaderModule(this->device, allocator,
+//                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_frag),
+//                                sizeof(image_morphing_tool_frag), &this->shaders.fragmentShader);
     return status;
 }
 void CMTVulkanBackend::releaseShaderModules() noexcept {
