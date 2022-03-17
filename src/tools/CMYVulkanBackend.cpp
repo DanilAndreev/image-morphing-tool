@@ -202,12 +202,26 @@ static VkResult createShaderModule(VkDevice device,
 }
 
 VkResult CMTVulkanBackend::initializeShaderModules() noexcept {
+    using ShaderWord_t = uint32_t;
+    VkResult status;
     ShadersFactory shadersFactory{};
     shadersFactory.loadFileOnPath("image_morphing_tool.vert");
-    std::vector<uint32_t> spirv = shadersFactory.getSPIRVfromGLSL(GLSLANG_STAGE_VERTEX);
+    std::vector<ShaderWord_t> spirv = shadersFactory.getSPIRVfromGLSL(EShLangVertex);
+    status = createShaderModule(this->device, allocator,
+                                spirv.data(),
+                                spirv.size() * sizeof(ShaderWord_t),
+                                &this->shaders.vertexShader);
+    if (status != VK_SUCCESS) return status;
+    shadersFactory.loadFileOnPath("image_morphing_tool.frag");
+    spirv = shadersFactory.getSPIRVfromGLSL(EShLangFragment);
+    status = createShaderModule(this->device, allocator,
+                                spirv.data(),
+                                spirv.size() * sizeof(ShaderWord_t),
+                                &this->shaders.fragmentShader);
+    if (status != VK_SUCCESS) return status;
 
-    using ShaderBin_t = const uint32_t *;
-    VkResult status;
+
+//    using ShaderBin_t = const uint32_t *;
 //    status = createShaderModule(this->device, allocator,
 //                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_vert),
 //                                sizeof(image_morphing_tool_vert), &this->shaders.vertexShader);
