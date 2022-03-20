@@ -53,7 +53,8 @@ protected:
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet> descriptorSets{VK_NULL_HANDLE};
 
-    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkPipeline pipelinePolygonal = VK_NULL_HANDLE;
+    VkPipeline pipelineWireframe = VK_NULL_HANDLE;
 private:
     VkDeviceMemory sourceImageMemory = VK_NULL_HANDLE;
     VkImage sourceImage = VK_NULL_HANDLE;
@@ -102,7 +103,7 @@ private:
     VkResult createPipelineLayout(VkPipelineLayout* outPipelineLayout, std::vector<VkDescriptorSetLayout>* outSetLayouts) noexcept;
     VkResult allocateResources(const Image& image, const Stroke& strokeFrom, const Stroke& strokeTo) noexcept;
     void releaseResources() noexcept;
-    VkResult createPSO(const Image& image) noexcept;
+    VkResult createPSO(const Image& image, VkPolygonMode polyMode, VkPipeline* target) noexcept;
     VkResult uploadResources(const Image& image) noexcept;
     VkResult readbackPrepareResources(const Image& image) noexcept;
     VkResult readbackResources(Image& image) noexcept;

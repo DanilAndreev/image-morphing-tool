@@ -36,6 +36,7 @@ protected:
     QSlider* magnitudeSlider;
     QCheckBox* hotEditCheckbox;
     QCheckBox* preserveBordersCheckbox;
+    QCheckBox* wireframeCheckbox;
 public:
     CMTSettingsEditor(CMTSettings* settings, QWidget* parent = nullptr);
     ~CMTSettingsEditor() override;
@@ -43,6 +44,7 @@ private slots:
     void hotEditCheckboxCheckedSlot(bool value);
     void magnitudeSliderSlot(int value);
     void preserveBordersCheckboxCheckedSlot(bool value);
+    void wireframeCheckboxCheckedSlot(bool value);
 };
 
 

@@ -36,16 +36,18 @@ private:
     bool _hotEditEnabled = false;
     float _toolMagnitude = 0.1f;
     bool _preserveBorders = false;
-
+    bool _wireframe = false;
 public:
     void setHotEditEnabled(bool value);
     void setToolMagnitude(float value);
     void setPreserveBorders(bool value);
+    void setWireframe(bool value);
 
 public:
     [[nodiscard]] bool hotEditEnabled() const { return this->_hotEditEnabled; }
     [[nodiscard]] float toolMagnitude() const { return this->_toolMagnitude; }
     [[nodiscard]] bool preserveBorders() const { return this->_preserveBorders; }
+    [[nodiscard]] bool wireframe() const { return this->_wireframe; }
 };
 
 #endif//IMAGE_MORPHING_TOOL_CMTSETTINGS_H

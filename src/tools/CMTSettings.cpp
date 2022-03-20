@@ -33,3 +33,9 @@ void CMTSettings::setPreserveBorders(bool value) {
     SettingsUpdateEvent event{*this};
     this->emit_event(SETTINGS_UPDATE_EVENT, event);
 }
+
+void CMTSettings::setWireframe(bool value) {
+    this->_wireframe = value;
+    SettingsUpdateEvent event{*this};
+    this->emit_event(SETTINGS_UPDATE_EVENT, event);
+}
