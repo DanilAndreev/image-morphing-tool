@@ -21,14 +21,17 @@
 #include <vulkan/vulkan.h>
 #include "core/drawables/Image.h"
 #include "core/Stroke/Stroke.h"
+#include "ShaderManager.h"
 
 class CMTVulkanBackend {
 protected:
     struct ShaderModules {
-        VkShaderModule vertexShader = VK_NULL_HANDLE;
-        VkShaderModule fragmentShader = VK_NULL_HANDLE;
+        ShaderManager* vertexShader = nullptr;
+        ShaderManager* fragmentShader = nullptr;
     };
 
+public:
+    ShaderModules shaders{};
 protected:
     VkAllocationCallbacks* allocator = nullptr;
 
@@ -40,8 +43,6 @@ protected:
 
     VkCommandPool commandPool = VK_NULL_HANDLE;
     VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-
-    ShaderModules shaders{};
 
     VkRenderPass renderPass = VK_NULL_HANDLE;
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;

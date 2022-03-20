@@ -30,19 +30,24 @@
 #include "core/history/Memento.h"
 
 #include "CMTVulkanBackend.h"
+#include "tools/gui/ShadersEditor.h"
+
+class CMTGui;
 
 struct CurveMorphingToolMemento : public Memento {
     Stroke strokeFrom;
     Stroke strokeTo;
 };
 
-
 class CurveMorphingTool : public ToolViewportEvents, public ToolSnapshotEvents, public ToolCanvasEvents {
+    friend CMTGui;
 public:
     std::mutex processLock;
     Stroke strokeFrom;
     Stroke strokeTo;
     Application* _application;
+protected:
+    CMTGui* _gui;
 public:
     std::vector<QPoint> currentStroke;
 public:

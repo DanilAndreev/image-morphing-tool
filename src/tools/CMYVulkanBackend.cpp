@@ -1,4 +1,4 @@
-// Copyright (c) 2022.
+// Copyright (c) 2022-2022.
 // License: CC0 1.0 Universal
 // Permissions:
 // - Commercial use
@@ -14,14 +14,15 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
-#include "SPIRVShaders.h"
+#include "GLSLShaders.h"
 #include "tools/CMTVulkanBackend.h"
+#include "tools/shaders/ShadersFactory.h"
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <renderdoc_app.h>
 
-#include <libloaderapi.h>
 #include <QtGui>
+#include <libloaderapi.h>
 
 #define ARR_ELEM_COUNT(arr) sizeof(arr) / sizeof(arr[0])
 
@@ -137,9 +138,9 @@ VkResult CMTVulkanBackend::initialize() noexcept {
     status = vkAllocateDescriptorSets(this->device, &setAllocateInfo, this->descriptorSets.data());
     if (status != VK_SUCCESS) return status;
 
-//    for (const VkDescriptorSetLayout &setLayout: setLayouts) {
-//        vkDestroyDescriptorSetLayout(this->device, setLayout, this->allocator);
-//    }
+    //    for (const VkDescriptorSetLayout &setLayout: setLayouts) {
+    //        vkDestroyDescriptorSetLayout(this->device, setLayout, this->allocator);
+    //    }
 
     return VK_SUCCESS;
 }
@@ -201,23 +202,51 @@ static VkResult createShaderModule(VkDevice device,
 }
 
 VkResult CMTVulkanBackend::initializeShaderModules() noexcept {
-    using ShaderBin_t = const uint32_t *;
-    VkResult status;
-    status = createShaderModule(this->device, allocator,
-                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_vert),
-                                sizeof(image_morphing_tool_vert), &this->shaders.vertexShader);
-    if (status != VK_SUCCESS) return status;
-    status = createShaderModule(this->device, allocator,
-                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_frag),
-                                sizeof(image_morphing_tool_frag), &this->shaders.fragmentShader);
-    return status;
+    this->shaders.vertexShader = new ShaderManager{ShaderManager::ShaderStage::VertexShader,
+                                                   this->device, this->allocator};
+    this->shaders.vertexShader->validateAndApply(std::vector<uint8_t>{image_morphing_tool_vert, image_morphing_tool_vert + sizeof(image_morphing_tool_vert)});
+    this->shaders.fragmentShader = new ShaderManager{ShaderManager::ShaderStage::FragmentShader,
+                                                     this->device, this->allocator};
+    this->shaders.fragmentShader->validateAndApply(std::vector<uint8_t>{image_morphing_tool_frag, image_morphing_tool_frag + sizeof(image_morphing_tool_frag)});
+    if (!this->shaders.vertexShader->isValid() || !this->shaders.fragmentShader->isValid())
+        return VK_ERROR_INITIALIZATION_FAILED;
+    return VK_SUCCESS;
+
+    //    using ShaderWord_t = uint32_t;
+    //    VkResult status;
+    //    ShadersFactory shadersFactory{};
+    //    shadersFactory.loadFileOnPath("image_morphing_tool.vert");
+    //    std::vector<ShaderWord_t> spirv = shadersFactory.getSPIRVfromGLSL(EShLangVertex);
+    //    status = createShaderModule(this->device, allocator,
+    //                                spirv.data(),
+    //                                spirv.size() * sizeof(ShaderWord_t),
+    //                                &this->shaders.vertexShader);
+    //    if (status != VK_SUCCESS) return status;
+    //    shadersFactory.loadFileOnPath("image_morphing_tool.frag");
+    //    spirv = shadersFactory.getSPIRVfromGLSL(EShLangFragment);
+    //    status = createShaderModule(this->device, allocator,
+    //                                spirv.data(),
+    //                                spirv.size() * sizeof(ShaderWord_t),
+    //                                &this->shaders.fragmentShader);
+    //    if (status != VK_SUCCESS) return status;
+
+
+    //    using ShaderBin_t = const uint32_t *;
+    //    status = createShaderModule(this->device, allocator,
+    //                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_vert),
+    //                                sizeof(image_morphing_tool_vert), &this->shaders.vertexShader);
+    //    if (status != VK_SUCCESS) return status;
+    //    status = createShaderModule(this->device, allocator,
+    //                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_frag),
+    //                                sizeof(image_morphing_tool_frag), &this->shaders.fragmentShader);
+    // return status;
 }
+
 void CMTVulkanBackend::releaseShaderModules() noexcept {
-    vkDestroyShaderModule(this->device, this->shaders.fragmentShader, allocator);
-    this->shaders.fragmentShader = VK_NULL_HANDLE;
-    vkDestroyShaderModule(this->device, this->shaders.vertexShader, allocator);
-    this->shaders.vertexShader = VK_NULL_HANDLE;
+    delete this->shaders.vertexShader;
+    delete this->shaders.fragmentShader;
 }
+
 VkResult CMTVulkanBackend::initializeRenderer() noexcept {
     std::vector<VkAttachmentDescription> attachments{};
     VkAttachmentDescription attachment{};
@@ -341,6 +370,9 @@ VkResult CMTVulkanBackend::createPipelineLayout(VkPipelineLayout *outPipelineLay
 }
 
 VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const Stroke &toStroke) noexcept {
+    if (!this->shaders.fragmentShader->isValid() || !this->shaders.vertexShader->isValid())
+        return VK_ERROR_UNKNOWN;
+
     RENDERDOC_API_1_1_2 *rdoc_api = NULL;
 
     if (HMODULE mod = GetModuleHandleA("renderdoc.dll")) {
@@ -454,7 +486,7 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
 
     vkQueueSubmit(this->deviceQueue, 1, &submitInfo, jobFence);
 
-//    vkQueueWaitIdle(this->deviceQueue);//TODO: semaphore
+    //    vkQueueWaitIdle(this->deviceQueue);//TODO: semaphore
     vkWaitForFences(this->device, 1, &jobFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
     this->readbackResources(image);
@@ -757,13 +789,13 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
     VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2];
     shaderStageCreateInfo[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
     shaderStageCreateInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    shaderStageCreateInfo[0].module = this->shaders.vertexShader;
+    shaderStageCreateInfo[0].module = this->shaders.vertexShader->shaderModule;
     shaderStageCreateInfo[0].pName = "main";
     shaderStageCreateInfo[0].pSpecializationInfo = nullptr;
 
     shaderStageCreateInfo[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
     shaderStageCreateInfo[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStageCreateInfo[1].module = this->shaders.fragmentShader;
+    shaderStageCreateInfo[1].module = this->shaders.fragmentShader->shaderModule;
     shaderStageCreateInfo[1].pName = "main";
     shaderStageCreateInfo[1].pSpecializationInfo = nullptr;
 
@@ -1108,13 +1140,13 @@ VkResult CMTVulkanBackend::generateGrid(std::size_t divisionsX, std::size_t divi
         }
     }
     this->pointsToDraw = points.size();
-//    points.push_back({{0.0f, 0.0f}});
-//    points.push_back({{0.0f, 1.0f}});
-//    points.push_back({{1.0f, 0.0f}});
-//
-//    points.push_back({{1.0f, 0.0f}});
-//    points.push_back({{0.0f, 1.0f}});
-//    points.push_back({{1.0f, 1.0f}});
+    //    points.push_back({{0.0f, 0.0f}});
+    //    points.push_back({{0.0f, 1.0f}});
+    //    points.push_back({{1.0f, 0.0f}});
+    //
+    //    points.push_back({{1.0f, 0.0f}});
+    //    points.push_back({{0.0f, 1.0f}});
+    //    points.push_back({{1.0f, 1.0f}});
 
     VkResult status;
     VkBufferCreateInfo vertexBufferCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};

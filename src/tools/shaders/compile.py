@@ -25,19 +25,23 @@ def compile_shaders() -> None:
     binary_directory: str = path.abspath(path.join(path.dirname(__file__), "bin"))
     main_header_filepath: str = path.join(binary_directory)
     temp_spirv_directory = path.join(binary_directory, "SPIRV")
-    include_directory_suffix = ["include"]
-    include_directory = path.join(binary_directory, *include_directory_suffix)
+    include_spv_directory_suffix = ["include", "SPIRV"]
+    include_glsl_directory_suffix = ["include", "GLSL"]
+    include_spv_directory = path.join(binary_directory, *include_spv_directory_suffix)
+    include_glsl_directory = path.join(binary_directory, *include_glsl_directory_suffix)
 
     os.makedirs(binary_directory, exist_ok=True)
 
-    generated_headers_paths: list[str] = []
+    generated_spv_headers_paths: list[str] = []
+    generated_glsl_headers_paths: list[str] = []
     for root, subFolders, files in os.walk(source_directory):
         os.makedirs(temp_spirv_directory, exist_ok=True)
-        os.makedirs(include_directory, exist_ok=True)
+        os.makedirs(include_spv_directory, exist_ok=True)
+        os.makedirs(include_glsl_directory, exist_ok=True)
         for filename in files:
             shader_filepath: str = path.join(root, filename)
-            out_filepath: str = path.join(temp_spirv_directory, filename + ".spv")
-            process = subprocess.Popen([spirv_compiler_path, "-V", shader_filepath, "-o", out_filepath, "-g", ],
+            out_spv_filepath: str = path.join(temp_spirv_directory, filename + ".spv")
+            process = subprocess.Popen([spirv_compiler_path, "-V", shader_filepath, "-o", out_spv_filepath, "-g", ],
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             process.wait()
@@ -48,14 +52,21 @@ def compile_shaders() -> None:
                                    f"STDERR:\n{error.decode()}"
                                    f"STDOUT:\n{output.decode()}")
 
-            gen_header_filename = filename + ".h"
-            gen_header_filepath: str = path.join(include_directory, gen_header_filename)
-            file_to_header(out_filepath, gen_header_filepath, filename.replace(".", "_"))
-            generated_headers_paths.append(gen_header_filename)
+            gen_spv_header_filename = filename + ".spv.h"
+            gen_spv_header_filepath: str = path.join(include_spv_directory, gen_spv_header_filename)
+            gen_glsl_header_filename = filename + ".glsl.h"
+            gen_glsl_header_filepath: str = path.join(include_glsl_directory, gen_glsl_header_filename)
+            file_to_header(out_spv_filepath, gen_spv_header_filepath, filename.replace(".", "_"))
+            file_to_header(shader_filepath, gen_glsl_header_filepath, filename.replace(".", "_"))
+            generated_spv_headers_paths.append(gen_spv_header_filename)
+            generated_glsl_headers_paths.append(gen_glsl_header_filename)
 
     with open(path.join(main_header_filepath, "SPIRVShaders.h"), "w") as main_header_file:
-        for header_filename in generated_headers_paths:
-            main_header_file.write(f"#include \"{path.join(*include_directory_suffix, header_filename)}\"\n")
+        for header_filename in generated_spv_headers_paths:
+            main_header_file.write(f"#include \"{path.join(*include_spv_directory_suffix, header_filename)}\"\n")
+    with open(path.join(main_header_filepath, "GLSLShaders.h"), "w") as main_header_file:
+        for header_filename in generated_glsl_headers_paths:
+            main_header_file.write(f"#include \"{path.join(*include_glsl_directory_suffix, header_filename)}\"\n")
 
 
 if __name__ == "__main__":

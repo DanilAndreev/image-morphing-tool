@@ -16,13 +16,18 @@
 
 #include "tools/CurveMorphingTool.h"
 
+#include <QApplication>
+#include <QLayout>
 #include <QPainter>
 #include <QPushButton>
-#include <QLayout>
-#include <QApplication>
+#include <iostream>
+#include <QMessageBox>
+#include <QMenu>
 
 #include "core/Stroke/StrokeDrawer.h"
 #include "core/Stroke/StrokeManager.h"
+#include "tools/gui/CMTGui.h"
+
 
 CurveMorphingTool::CurveMorphingTool() noexcept : ToolViewportEvents(), displayDirections(false) {}
 
@@ -33,11 +38,11 @@ void CurveMorphingTool::initialize(Application *application) {
     this->_application = application;
     this->backend.initialize();//TODO: get status;
 
-    auto* button1 = new QPushButton{};
-    button1->setText("mode");
+    this->_gui = new CMTGui{this, &application->getMainWindow()};
 
-    QLayout* layout = this->_application->getMainWindow().getToolBar()->layout();
-    layout->addWidget(button1);
+
+    ToolBar *toolbar = this->_application->getMainWindow().getToolBar();
+    toolbar->layout()->addWidget(this->_gui);
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {
@@ -145,10 +150,26 @@ void CurveMorphingTool::keyPressEventHandler(VKeyEvent &event) {
             break;
         case Qt::Key::Key_Enter:
         case Qt::Key::Key_Return:
-            this->_application->history().makeSnapshot();
-            this->backend.execute(this->_application->document()->image(),
-                                  this->strokeFrom, this->strokeTo);
-            event.queueRepaint();
+            if (this->backend.shaders.vertexShader->isValid() && this->backend.shaders.fragmentShader->isValid()) {
+                this->_application->history().makeSnapshot();
+                this->backend.execute(this->_application->document()->image(),
+                                      this->strokeFrom, this->strokeTo);
+                event.queueRepaint();
+            } else {
+                QString message = "One or more shaders are incorrect:\n";
+                if (!this->backend.shaders.vertexShader->isValid()) {
+                    message += "Vertex shader:\n";
+                    message += QString(this->backend.shaders.vertexShader->getError().c_str());
+                }
+                if (!this->backend.shaders.fragmentShader->isValid()) {
+                    message += "Fragment shader:\n";
+                    message += QString(this->backend.shaders.fragmentShader->getError().c_str());
+                }
+                this->_application->log(message, LogEvent::LOG_LEVEL::ERROR);
+                QMessageBox messageBox{};
+                messageBox.setText("One or more shaders are incorrect. See console for details.");
+                messageBox.exec();
+            }
             break;
     }
 }
