@@ -22,9 +22,11 @@
 #include <QPushButton>
 #include <iostream>
 #include <QMessageBox>
+#include <QMenu>
 
 #include "core/Stroke/StrokeDrawer.h"
 #include "core/Stroke/StrokeManager.h"
+#include "tools/gui/CMTGui.h"
 
 
 CurveMorphingTool::CurveMorphingTool() noexcept : ToolViewportEvents(), displayDirections(false) {}
@@ -36,22 +38,11 @@ void CurveMorphingTool::initialize(Application *application) {
     this->_application = application;
     this->backend.initialize();//TODO: get status;
 
-    this->_shadersEditor = new ShadersEditor{this->backend.shaders.vertexShader, "Vertex shader"};
-    this->_shadersEditor->resize(800, 600);
+    this->_gui = new CMTGui{this, &application->getMainWindow()};
+
 
     ToolBar *toolbar = this->_application->getMainWindow().getToolBar();
-    auto *button1 = new QPushButton{};
-    button1->setText("mode");
-//    button1->connect(button1, SIGNAL(released()), toolbar, []() {
-//                         if (this->_shadersEditor->isVisible()) {
-//                             this->_shadersEditor->close();
-//                         } else {
-//                             this->_shadersEditor->show();
-//                         }
-//                     });
-
-    toolbar->layout()->addWidget(button1);
-    this->_shadersEditor->show();
+    toolbar->layout()->addWidget(this->_gui);
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {
