@@ -32,11 +32,15 @@ protected:
     QTextEdit *_errorsTextEdit;
     ShaderManager* _manager;
 
+protected:
+    QString _defaultText;
+    QString _name;
 public:
-    explicit ShadersEditor(ShaderManager* manager, QWidget *parent = nullptr);
+    explicit ShadersEditor(ShaderManager* manager, QString name, QWidget *parent = nullptr);
     ~ShadersEditor() override;
 private slots:
     void applyChangesSlot();
+    void resetDefaultSlot();
 };
 
 

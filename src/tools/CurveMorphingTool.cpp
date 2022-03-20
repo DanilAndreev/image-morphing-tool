@@ -36,7 +36,7 @@ void CurveMorphingTool::initialize(Application *application) {
     this->_application = application;
     this->backend.initialize();//TODO: get status;
 
-    this->_shadersEditor = new ShadersEditor{this->backend.shaders.vertexShader};
+    this->_shadersEditor = new ShadersEditor{this->backend.shaders.vertexShader, "Vertex shader"};
     this->_shadersEditor->resize(800, 600);
 
     ToolBar *toolbar = this->_application->getMainWindow().getToolBar();
