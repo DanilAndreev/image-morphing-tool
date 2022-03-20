@@ -30,6 +30,8 @@ protected:
         ShaderManager* fragmentShader = nullptr;
     };
 
+public:
+    ShaderModules shaders{};
 protected:
     VkAllocationCallbacks* allocator = nullptr;
 
@@ -41,8 +43,6 @@ protected:
 
     VkCommandPool commandPool = VK_NULL_HANDLE;
     VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-
-    ShaderModules shaders{};
 
     VkRenderPass renderPass = VK_NULL_HANDLE;
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;

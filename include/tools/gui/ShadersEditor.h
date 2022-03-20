@@ -22,20 +22,19 @@
 #include <functional>
 #include <utility>
 
+#include "tools/ShaderManager.h"
+
 class ShadersEditor : public QWidget {
     Q_OBJECT
 protected:
+    events::event_emitter::event_handler_t shaderUpdateEventHandler;
     QTextEdit *_textEdit;
-
-private:
-    using applyChangesCallback_t = std::function<void(QString)>;
-    applyChangesCallback_t applyChangesCallback;
+    QTextEdit *_errorsTextEdit;
+    ShaderManager* _manager;
 
 public:
-    explicit ShadersEditor(QWidget *parent = nullptr);
-
-public:
-    void setApplyChangesCallback(applyChangesCallback_t callback) { this->applyChangesCallback = std::move(callback); }
+    explicit ShadersEditor(ShaderManager* manager, QWidget *parent = nullptr);
+    ~ShadersEditor() override;
 private slots:
     void applyChangesSlot();
 };

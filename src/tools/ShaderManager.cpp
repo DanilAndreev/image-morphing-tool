@@ -20,7 +20,7 @@
 bool ShaderManager::validateAndApply(const std::string& inGlsl) noexcept {
     try {
         this->validateAndApplyInternal(inGlsl);
-    } catch (std::exception& err) {
+    } catch (Exceptions::Exception& err) {
         this->valid = false;
         if (this->shaderModule)
             vkDestroyShaderModule(this->device, this->shaderModule, this->allocator);
@@ -28,6 +28,8 @@ bool ShaderManager::validateAndApply(const std::string& inGlsl) noexcept {
         this->spirv.clear();
         this->error = err.what();
     }
+    ShaderUpdateEvent event{*this};
+    this->emit_event(SHADER_UPDATE_EVENT, event);
     return this->valid;
 }
 

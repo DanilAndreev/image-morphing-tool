@@ -36,12 +36,7 @@ void CurveMorphingTool::initialize(Application *application) {
     this->_application = application;
     this->backend.initialize();//TODO: get status;
 
-    this->_shadersEditor = new ShadersEditor{};
-    this->_shadersEditor->setApplyChangesCallback([this](QString shaderText){
-        QMessageBox message{};
-        message.setText(shaderText);
-        message.exec();
-    });
+    this->_shadersEditor = new ShadersEditor{this->backend.shaders.vertexShader};
     this->_shadersEditor->resize(800, 600);
 
     ToolBar *toolbar = this->_application->getMainWindow().getToolBar();
@@ -164,10 +159,26 @@ void CurveMorphingTool::keyPressEventHandler(VKeyEvent &event) {
             break;
         case Qt::Key::Key_Enter:
         case Qt::Key::Key_Return:
-            this->_application->history().makeSnapshot();
-            this->backend.execute(this->_application->document()->image(),
-                                  this->strokeFrom, this->strokeTo);
-            event.queueRepaint();
+            if (this->backend.shaders.vertexShader->isValid() && this->backend.shaders.fragmentShader->isValid()) {
+                this->_application->history().makeSnapshot();
+                this->backend.execute(this->_application->document()->image(),
+                                      this->strokeFrom, this->strokeTo);
+                event.queueRepaint();
+            } else {
+                QString message = "One or more shaders are incorrect:\n";
+                if (!this->backend.shaders.vertexShader->isValid()) {
+                    message += "Vertex shader:\n";
+                    message += QString(this->backend.shaders.vertexShader->getError().c_str());
+                }
+                if (!this->backend.shaders.fragmentShader->isValid()) {
+                    message += "Fragment shader:\n";
+                    message += QString(this->backend.shaders.fragmentShader->getError().c_str());
+                }
+                this->_application->log(message, LogEvent::LOG_LEVEL::ERROR);
+                QMessageBox messageBox{};
+                messageBox.setText("One or more shaders are incorrect. See console for details.");
+                messageBox.exec();
+            }
             break;
     }
 }
