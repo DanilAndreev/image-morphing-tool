@@ -54,7 +54,7 @@ list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
 file(GLOB_RECURSE TEST_SOURCES "${PROJECT_SOURCE_DIR}/tests/*.test.cpp")
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
-add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES} "${PROJECT_SOURCE_DIR}/src/main.cpp" src/tools/gui/CMTGui.cpp include/tools/gui/CMTGui.h src/tools/gui/CMTSettingsEditor.cpp include/tools/gui/CMTSettingsEditor.h include/tools/CMTSettings.h src/tools/CMTSettings.cpp)
+add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES} "${PROJECT_SOURCE_DIR}/src/main.cpp")
 
 if (NOT CMAKE_PREFIX_PATH)
     message(WARNING "CMAKE_PREFIX_PATH is not defined, you may need to set it "

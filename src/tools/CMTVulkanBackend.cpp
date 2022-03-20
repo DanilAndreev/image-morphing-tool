@@ -17,6 +17,7 @@
 #include "GLSLShaders.h"
 #include "tools/CMTVulkanBackend.h"
 #include "tools/shaders/ShadersFactory.h"
+#include "tools/CMTSettings.h"
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <renderdoc_app.h>
@@ -31,7 +32,9 @@ namespace ShaderDataStructs {
     using uint = std::uint32_t;
 
     struct MorphingSettings {
-        uint strokeElementsCount;
+        uint strokeElementsCount = 0;
+        float toolMagnitude = 0.1;
+        uint preserveBorders = static_cast<uint>(false);
     };
 
     struct VertexData {
@@ -433,6 +436,10 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
 
     ShaderDataStructs::MorphingSettings morphingSettings{};
     morphingSettings.strokeElementsCount = fromStroke.size();
+    if (this->cmtSettings) {
+        morphingSettings.toolMagnitude = this->cmtSettings->toolMagnitude();
+        morphingSettings.preserveBorders = this->cmtSettings->preserveBorders();
+    }
     vkCmdPushConstants(this->commandBuffer, this->pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataStructs::MorphingSettings),
                        &morphingSettings);

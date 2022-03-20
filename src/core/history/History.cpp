@@ -112,3 +112,7 @@ void History::reset() {
     this->clear();
     this->storageLock.unlock();
 }
+const Snapshot &History::last() noexcept {
+    auto iter = this->crbegin();
+    return *(*iter);
+}

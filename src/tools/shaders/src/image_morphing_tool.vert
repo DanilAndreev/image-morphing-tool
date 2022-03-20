@@ -6,6 +6,8 @@ layout(location = 2) out float oDepth;
 
 layout(push_constant) uniform MorphingSettings {
     uint strokeElementsCount;
+    float toolMagnitude;
+    bool preserveBorders;
 } morphingSettings;
 
 layout(set = 0, binding = 0, std430) readonly buffer StrokeFrom {
@@ -17,9 +19,6 @@ layout(set = 0, binding = 1, std430) readonly buffer StrokeTo {
 } strokeTo;
 
 const float PI = 3.14159265359f;
-
-//TODO: move to morphingSettings
-const float toolMagnitude = 0.1f;
 
 float powerFunc(float value) {
     return cos(value * PI) / 2.0f + 0.5f;
@@ -38,10 +37,10 @@ void main() {
         vec2 toPoint = strokeTo.points[i];
 
         float startPointDistance = distance(fromPoint, vPosition);
-        if (startPointDistance < toolMagnitude) {
+        if (startPointDistance < morphingSettings.toolMagnitude) {
             isAffected = true;
             ++affectedCount;
-            float normalizedStrength = startPointDistance / toolMagnitude;
+            float normalizedStrength = startPointDistance / morphingSettings.toolMagnitude;
             float moveWeight = powerFunc(normalizedStrength);
             shift += (toPoint - fromPoint) * moveWeight;
         }

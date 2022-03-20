@@ -27,6 +27,7 @@
 #include "core/Stroke/StrokeDrawer.h"
 #include "core/Stroke/StrokeManager.h"
 #include "tools/gui/CMTGui.h"
+#include "tools/ShaderManager.h"
 
 
 CurveMorphingTool::CurveMorphingTool() noexcept : ToolViewportEvents(), displayDirections(false) {}
@@ -37,15 +38,45 @@ void CurveMorphingTool::initialize(Application *application) {
     ToolCanvasEvents::initialize(application);
     this->_application = application;
     this->backend.initialize();//TODO: get status;
+    this->backend.setSettings(&this->settings);
 
     this->_gui = new CMTGui{this, &application->getMainWindow()};
 
 
     ToolBar *toolbar = this->_application->getMainWindow().getToolBar();
     toolbar->layout()->addWidget(this->_gui);
+
+    this->settingsUpdateEventHandler = [this](events::event_base& bEvent){
+        auto& event = dynamic_cast<CMTSettings::SettingsUpdateEvent&>(bEvent);
+        if (event.settings.hotEditEnabled()) {
+            auto* memento = dynamic_cast<DocumentMemento*>(this->_application->history().last().at("document"));
+            if (!memento) return;
+            Image picture = Image{memento->image};
+            this->executeMorphing(&picture);
+            this->_application->document()->image() = picture;
+            this->_application->document()->redraw();
+        }
+    };
+    this->shadersUpdateEventHandler = [this](events::event_base& bEvent){
+        auto& event = dynamic_cast<ShaderManager::ShaderUpdateEvent&>(bEvent);
+        if (event.valid) {
+            auto* memento = dynamic_cast<DocumentMemento*>(this->_application->history().last().at("document"));
+            if (!memento) return;
+            Image picture = Image{memento->image};
+            this->executeMorphing(&picture);
+            this->_application->document()->image() = picture;
+            this->_application->document()->redraw();
+        }
+    };
+    this->settings.add_listener(CMTSettings::SETTINGS_UPDATE_EVENT, &this->settingsUpdateEventHandler);
+    this->backend.shaders.fragmentShader->add_listener(ShaderManager::SHADER_UPDATE_EVENT, &this->shadersUpdateEventHandler);
+    this->backend.shaders.vertexShader->add_listener(ShaderManager::SHADER_UPDATE_EVENT, &this->shadersUpdateEventHandler);
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {
+    this->backend.shaders.fragmentShader->remove_listener(ShaderManager::SHADER_UPDATE_EVENT, &this->shadersUpdateEventHandler);
+    this->backend.shaders.vertexShader->remove_listener(ShaderManager::SHADER_UPDATE_EVENT, &this->shadersUpdateEventHandler);
+    this->settings.remove_listener(CMTSettings::SETTINGS_UPDATE_EVENT, &this->settingsUpdateEventHandler);
     this->backend.release();
     ToolViewportEvents::uninitialize(application);
     ToolSnapshotEvents::uninitialize(application);
@@ -149,27 +180,38 @@ void CurveMorphingTool::keyPressEventHandler(VKeyEvent &event) {
             this->firstStroke = !this->firstStroke;
             break;
         case Qt::Key::Key_Enter:
-        case Qt::Key::Key_Return:
-            if (this->backend.shaders.vertexShader->isValid() && this->backend.shaders.fragmentShader->isValid()) {
-                this->_application->history().makeSnapshot();
-                this->backend.execute(this->_application->document()->image(),
-                                      this->strokeFrom, this->strokeTo);
+            this->_application->history().makeSnapshot();
+            if (this->executeMorphing())
                 event.queueRepaint();
-            } else {
-                QString message = "One or more shaders are incorrect:\n";
-                if (!this->backend.shaders.vertexShader->isValid()) {
-                    message += "Vertex shader:\n";
-                    message += QString(this->backend.shaders.vertexShader->getError().c_str());
-                }
-                if (!this->backend.shaders.fragmentShader->isValid()) {
-                    message += "Fragment shader:\n";
-                    message += QString(this->backend.shaders.fragmentShader->getError().c_str());
-                }
-                this->_application->log(message, LogEvent::LOG_LEVEL::ERROR);
-                QMessageBox messageBox{};
-                messageBox.setText("One or more shaders are incorrect. See console for details.");
-                messageBox.exec();
-            }
+        case Qt::Key::Key_Return:
             break;
     }
+}
+
+bool CurveMorphingTool::executeMorphing(Image* targetImage) noexcept {
+    bool retVal;
+    this->processLock.lock();
+    if (!targetImage)
+        targetImage = &this->_application->document()->image();
+    if (this->backend.shaders.vertexShader->isValid() && this->backend.shaders.fragmentShader->isValid()) {
+        this->backend.execute(*targetImage, this->strokeFrom, this->strokeTo);
+        retVal = true;
+    } else {
+        QString message = "One or more shaders are incorrect:\n";
+        if (!this->backend.shaders.vertexShader->isValid()) {
+            message += "Vertex shader:\n";
+            message += QString(this->backend.shaders.vertexShader->getError().c_str());
+        }
+        if (!this->backend.shaders.fragmentShader->isValid()) {
+            message += "Fragment shader:\n";
+            message += QString(this->backend.shaders.fragmentShader->getError().c_str());
+        }
+        this->_application->log(message, LogEvent::LOG_LEVEL::ERROR);
+        QMessageBox messageBox{};
+        messageBox.setText("One or more shaders are incorrect. See console for details.");
+        messageBox.exec();
+        retVal = false;
+    }
+    this->processLock.unlock();
+    return retVal;
 }

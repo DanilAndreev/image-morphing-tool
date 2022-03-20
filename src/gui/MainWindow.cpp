@@ -23,6 +23,7 @@
 #include <QApplication>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QScrollArea>
 
 #include "Application.h"
 #include "core/utils.h"
@@ -30,78 +31,49 @@
 
 MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMainWindow(parent),
                                                                             application(application) {
+    this->buildMenu(parent);
+
+    this->setCentralWidget(new QWidget{});
+
     this->viewport = new Viewport(application, this);
     this->toolBar = new ToolBar(this);
     this->logWindow = new LogWindow(application);
     BottomLineWidget *bottomLineWidget = new BottomLineWidget{application, this};
 
-    this->setCentralWidget(new QWidget{});
+    this->_topOuterDock = new QBoxLayout{QBoxLayout::Direction::TopToBottom};
+    this->_bottomOuterDock = new QBoxLayout{QBoxLayout::Direction::TopToBottom};
+    this->_leftOuterDock = new QBoxLayout{QBoxLayout::Direction::TopToBottom};
+    this->_rightOuterDock = new QBoxLayout{QBoxLayout::Direction::TopToBottom};
+    this->_topInnerDock = new QBoxLayout{QBoxLayout::Direction::TopToBottom};
+    this->_bottomInnerDock = new QBoxLayout{QBoxLayout::Direction::TopToBottom};
 
-    QAction *quitAction = new QAction("&Quit", this);
-    connect(quitAction, &QAction::triggered, qApp, QApplication::quit);
+    QBoxLayout* outerVerticalLayout = new QBoxLayout{QBoxLayout::Direction::TopToBottom};
+    outerVerticalLayout->addLayout(this->_topOuterDock);
+    QBoxLayout* outerHorizontalLayout = new QBoxLayout{QBoxLayout::Direction::LeftToRight};
+    outerVerticalLayout->addLayout(outerHorizontalLayout);
+    outerVerticalLayout->addLayout(this->_bottomOuterDock);
 
-    QAction *undoAction = new QAction("&Undo", this);
-    undoAction->setShortcut(tr("CTRL+Z"));
-    connect(undoAction, &QAction::triggered, qApp, [application]() {
-        if (application->history().undo()) {
-            application->log("Undo", LogEvent::LOG_LEVEL::INFO);
-        } else {
-            application->log("Nothing to undo.", LogEvent::LOG_LEVEL::WARNING);
-        }
-    });
+    outerHorizontalLayout->addLayout(this->_leftOuterDock);
+    QBoxLayout *innerVerticalLayout = new QBoxLayout(QBoxLayout::Direction::TopToBottom);
+    outerHorizontalLayout->addLayout(innerVerticalLayout);
+    outerHorizontalLayout->addLayout(this->_rightOuterDock);
 
-    QAction *loadImageAction = new QAction("&Load Image", this);
-    connect(loadImageAction, &QAction::triggered, qApp, [application, parent]() {
-        QString filename = QFileDialog::getOpenFileName(parent,
-                                                        tr("Open image"),
-                                                        "/images",
-                                                        tr("PNG (*.png)"));
-        if (filename.isNull()) return;
-        try {
-            QImage img{filename};
-            application->document()->loadImage(img);
-            application->history().reset();
-            application->log(QString{"Successfully loaded image: "} + filename, LogEvent::LOG_LEVEL::INFO);
-        } catch (Exceptions::FileIOError& error) {
-            application->log(QString{"Failed to load image: "} + filename, LogEvent::LOG_LEVEL::ERROR);
-            QMessageBox msgBox;
-            msgBox.setText("Failed to load image.");
-            msgBox.exec();
-        }
-    });
+    innerVerticalLayout->addLayout(this->_topInnerDock);
+    QBoxLayout* toolbarAndViewportLayout = new QBoxLayout(QBoxLayout::Direction::LeftToRight);
+    innerVerticalLayout->addLayout(toolbarAndViewportLayout);
+    innerVerticalLayout->addLayout(this->_bottomInnerDock);
+    innerVerticalLayout->addWidget(bottomLineWidget);
+    this->centralWidget()->setLayout(outerVerticalLayout);
 
-    QAction *redoAction = new QAction("&Redo", this);
-    redoAction->setShortcut(tr("CTRL+SHIFT+Z"));
-    connect(redoAction, &QAction::triggered, qApp, [application]() {
-        if (application->history().redo()) {
-            application->log("Redo", LogEvent::LOG_LEVEL::INFO);
-        } else {
-            application->log("Nothing to redo.", LogEvent::LOG_LEVEL::WARNING);
-        };
-    });
+    toolbarAndViewportLayout->setContentsMargins({0, 0, 0, 0});
+    outerVerticalLayout->setContentsMargins({0, 0, 0, 0});
+    outerHorizontalLayout->setContentsMargins({0, 0, 0, 0});
+    innerVerticalLayout->setContentsMargins({0, 0, 0, 0});
 
-
-    QMenu *fileMenu = this->menuBar()->addMenu("&File");
-    fileMenu->setProperty("qssClass", "MenuList MainWindowFileMenu");
-    fileMenu->addAction(loadImageAction);
-    fileMenu->addAction(undoAction);
-    fileMenu->addAction(redoAction);
-    fileMenu->addAction(quitAction);
-
-
-    QWidget *rightWidget = new QWidget(this->centralWidget());
-    QBoxLayout *horizontalLayout = new QBoxLayout(QBoxLayout::Direction::LeftToRight, this->centralWidget());
-    horizontalLayout->addWidget(this->toolBar);
-    horizontalLayout->addWidget(rightWidget);
-    horizontalLayout->setContentsMargins({0, 0, 0, 0});
-    horizontalLayout->setSpacing(0);
-    this->centralWidget()->setLayout(horizontalLayout);
-
-    QBoxLayout *verticalLayout = new QBoxLayout(QBoxLayout::Direction::TopToBottom);
-    verticalLayout->addWidget(this->viewport);
-    verticalLayout->addWidget(bottomLineWidget);
-    verticalLayout->setContentsMargins({0, 0, 0, 0});
-    rightWidget->setLayout(verticalLayout);
+    toolbarAndViewportLayout->addWidget(this->toolBar);
+    toolbarAndViewportLayout->addWidget(this->viewport);
+    toolbarAndViewportLayout->setContentsMargins({0, 0, 0, 0});
+    toolbarAndViewportLayout->setSpacing(0);
 
     this->centralWidget()->setProperty("qssClass", "MainWindowCentral");
     this->menuWidget()->setProperty("qssClass", "MainWindowMenu");
@@ -129,4 +101,57 @@ LogWindow *MainWindow::getLogWindow() const {
 
 void MainWindow::closeEvent(QCloseEvent *event) {
     qApp->quit();
+}
+
+void MainWindow::buildMenu(QWidget* parent) {
+    QAction *quitAction = new QAction("&Quit", this);
+    connect(quitAction, &QAction::triggered, qApp, QApplication::quit);
+
+    QAction *undoAction = new QAction("&Undo", this);
+    undoAction->setShortcut(tr("CTRL+Z"));
+    connect(undoAction, &QAction::triggered, qApp, [this]() {
+        if (this->application->history().undo()) {
+            this->application->log("Undo", LogEvent::LOG_LEVEL::INFO);
+        } else {
+            this->application->log("Nothing to undo.", LogEvent::LOG_LEVEL::WARNING);
+        }
+    });
+
+    QAction *loadImageAction = new QAction("&Load Image", this);
+    connect(loadImageAction, &QAction::triggered, qApp, [this, parent]() {
+        QString filename = QFileDialog::getOpenFileName(parent,
+                                                        tr("Open image"),
+                                                        "/images",
+                                                        tr("PNG (*.png)"));
+        if (filename.isNull()) return;
+        try {
+            QImage img{filename};
+            this->application->document()->loadImage(img);
+            this->application->history().reset();
+            this->application->log(QString{"Successfully loaded image: "} + filename, LogEvent::LOG_LEVEL::INFO);
+        } catch (Exceptions::FileIOError& error) {
+            this->application->log(QString{"Failed to load image: "} + filename, LogEvent::LOG_LEVEL::ERROR);
+            QMessageBox msgBox;
+            msgBox.setText("Failed to load image.");
+            msgBox.exec();
+        }
+    });
+
+    QAction *redoAction = new QAction("&Redo", this);
+    redoAction->setShortcut(tr("CTRL+SHIFT+Z"));
+    connect(redoAction, &QAction::triggered, qApp, [this]() {
+        if (this->application->history().redo()) {
+            this->application->log("Redo", LogEvent::LOG_LEVEL::INFO);
+        } else {
+            this->application->log("Nothing to redo.", LogEvent::LOG_LEVEL::WARNING);
+        };
+    });
+
+
+    QMenu *fileMenu = this->menuBar()->addMenu("&File");
+    fileMenu->setProperty("qssClass", "MenuList MainWindowFileMenu");
+    fileMenu->addAction(loadImageAction);
+    fileMenu->addAction(undoAction);
+    fileMenu->addAction(redoAction);
+    fileMenu->addAction(quitAction);
 }

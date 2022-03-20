@@ -23,15 +23,19 @@
 #include "core/Stroke/Stroke.h"
 #include "ShaderManager.h"
 
+class CMTSettings;
+
 class CMTVulkanBackend {
 protected:
     struct ShaderModules {
         ShaderManager* vertexShader = nullptr;
         ShaderManager* fragmentShader = nullptr;
     };
-
 public:
     ShaderModules shaders{};
+
+protected:
+    const CMTSettings* cmtSettings = nullptr;
 protected:
     VkAllocationCallbacks* allocator = nullptr;
 
@@ -81,7 +85,8 @@ public:
     CMTVulkanBackend() = default;
     CMTVulkanBackend(const CMTVulkanBackend&) = delete;
     ~CMTVulkanBackend() = default;
-
+public:
+    void setSettings(const CMTSettings* settings) { this->cmtSettings = settings; }
 public:
     VkResult initialize() noexcept;
     void release() noexcept;
