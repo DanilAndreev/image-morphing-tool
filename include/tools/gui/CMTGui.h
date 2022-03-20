@@ -29,7 +29,8 @@ class CMTGui: public QPushButton {
 protected:
     CurveMorphingTool* _tool;
 protected:
-    ShadersEditor * _shadersEditor = nullptr;
+    ShadersEditor * _vertexShaderEditor = nullptr;
+    ShadersEditor * _fragmentShaderEditor = nullptr;
     QMenu* _menu;
 public:
     CMTGui(CurveMorphingTool* tool, QWidget* parent);
@@ -37,6 +38,9 @@ signals:
     void rightClicked();
 private slots:
     void showMenuSlot();
+    void morphingSettingsEditActionSlot();
+    void vertexShaderEditActionSlot();
+    void fragmentShaderEditActionSlot();
     void mousePressEvent(QMouseEvent *e) override;
 };
 

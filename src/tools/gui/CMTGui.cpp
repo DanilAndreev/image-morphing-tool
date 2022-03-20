@@ -23,24 +23,29 @@
 
 CMTGui::CMTGui(CurveMorphingTool *tool, QWidget *parent): QPushButton(parent), _tool(tool) {
     this->setText("aaa");
-    this->_shadersEditor = new ShadersEditor{tool->backend.shaders.vertexShader, "Vertex shader"};
-    this->_shadersEditor->resize(800, 600);
+    this->_vertexShaderEditor = new ShadersEditor{tool->backend.shaders.vertexShader, "Vertex shader"};
+    this->_fragmentShaderEditor = new ShadersEditor{tool->backend.shaders.fragmentShader, "Fragment shader"};
+    this->_vertexShaderEditor->resize(800, 600);
+    this->_fragmentShaderEditor->resize(800, 600);
 
     this->_menu = new QMenu{"CMT", this};
-    QAction* action1 = new QAction{"aaaa1"};
-    QAction* action2 = new QAction{"aaaa2"};
-    this->_menu->addAction(action1);
-    this->_menu->addAction(action2);
-    this->_menu->setDefaultAction(action1);
-    this->_shadersEditor->show();
+    QAction* morphingSettingsEditAction = new QAction{"Morphing settings"};
+    QAction* vertexShaderEditAction = new QAction{"Vertex shader editor"};
+    QAction* fragmentShaderEditAction = new QAction{"Fragment shader editor"};
+    this->_menu->addAction(morphingSettingsEditAction);
+    this->_menu->addAction(vertexShaderEditAction);
+    this->_menu->addAction(fragmentShaderEditAction);
 
     connect(this, SIGNAL(rightClicked()), this, SLOT(showMenuSlot()));
+    connect(morphingSettingsEditAction, SIGNAL(triggered()), this, SLOT(morphingSettingsEditActionSlot()));
+    connect(vertexShaderEditAction, SIGNAL(triggered()), this, SLOT(vertexShaderEditActionSlot()));
+    connect(fragmentShaderEditAction, SIGNAL(triggered()), this, SLOT(fragmentShaderEditActionSlot()));
 }
 
 void CMTGui::showMenuSlot() {
     auto pos = this->pos() + this->window()->pos();
     pos.setX(pos.x() + this->size().width());
-    pos.setX(pos.y() + this->size().height());
+    pos.setY(pos.y() + this->size().height());
     this->_menu->move(pos);
     this->_menu->exec();
 }
@@ -52,4 +57,16 @@ void CMTGui::mousePressEvent(QMouseEvent *e) {
         default:
             QAbstractButton::mousePressEvent(e);
     }
+}
+
+void CMTGui::morphingSettingsEditActionSlot() {
+
+}
+
+void CMTGui::vertexShaderEditActionSlot() {
+    this->_vertexShaderEditor->show();
+}
+
+void CMTGui::fragmentShaderEditActionSlot() {
+    this->_fragmentShaderEditor->show();
 }
