@@ -27,3 +27,9 @@ void CMTSettings::setToolMagnitude(float value) {
     SettingsUpdateEvent event{*this};
     this->emit_event(SETTINGS_UPDATE_EVENT, event);
 }
+
+void CMTSettings::setPreserveBorders(bool value) {
+    this->_preserveBorders = value;
+    SettingsUpdateEvent event{*this};
+    this->emit_event(SETTINGS_UPDATE_EVENT, event);
+}

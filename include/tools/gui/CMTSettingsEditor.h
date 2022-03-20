@@ -18,14 +18,22 @@
 #define IMAGE_MORPHING_TOOL_CMTSETTINGSEDITOR_H
 
 #include <QWidget>
+#include <event_emitter.h>
 
-class CurveMorphingTool;
+class CMTSettings;
 
 class CMTSettingsEditor : public QWidget {
 protected:
-    CurveMorphingTool* _tool;
+    events::event_emitter::event_handler_t settingsUpdateEventHandler;
+    CMTSettings* _settings;
+
+protected:
+    QSlider* magnitudeSlider;
+    QCheckBox* hotEditCheckbox;
+    QCheckBox* preserveBordersCheckbox;
 public:
-    CMTSettingsEditor(CurveMorphingTool* tool, QWidget* parent = nullptr);
+    CMTSettingsEditor(CMTSettings* settings, QWidget* parent = nullptr);
+    ~CMTSettingsEditor() override;
 };
 
 

@@ -19,12 +19,15 @@
 #include <QCheckBox>
 #include <QSlider>
 #include "tools/gui/CMTSettingsEditor.h"
-#include "tools/CurveMorphingTool.h"
+#include "tools/CMTSettings.h"
 
-CMTSettingsEditor::CMTSettingsEditor(CurveMorphingTool *tool, QWidget *parent) : QWidget(parent), _tool(tool) {
-    QCheckBox* hotEditCheckbox = new QCheckBox{this};
+CMTSettingsEditor::CMTSettingsEditor(CMTSettings *settings, QWidget *parent) : QWidget(parent), _settings(settings) {
+    this->hotEditCheckbox = new QCheckBox{this};
+    this->hotEditCheckbox->setCheckState(settings->hotEditEnabled() ? Qt::Checked : Qt::Unchecked);
+    this->preserveBordersCheckbox = new QCheckBox{this};
+    this->preserveBordersCheckbox->setCheckState(settings->preserveBorders() ? Qt::Checked : Qt::Unchecked);
 
-    QSlider* magnitudeSlider = new QSlider{this};
+    this->magnitudeSlider = new QSlider{this};
     magnitudeSlider->setOrientation(Qt::Orientation::Horizontal);
     magnitudeSlider->setTickPosition(QSlider::TicksBelow);
 
@@ -33,4 +36,16 @@ CMTSettingsEditor::CMTSettingsEditor(CurveMorphingTool *tool, QWidget *parent) :
     layout->addWidget(hotEditCheckbox);
     layout->addWidget(magnitudeSlider);
     this->setLayout(layout);
+
+    this->settingsUpdateEventHandler = [this](events::event_base& bEvent){
+        auto& event = dynamic_cast<CMTSettings::SettingsUpdateEvent&>(bEvent);
+        this->hotEditCheckbox->setCheckState(event.settings.hotEditEnabled() ? Qt::Checked : Qt::Unchecked);
+        this->magnitudeSlider->setValue(2); //TODO: convert event.settings.toolMagnitude()
+        this->preserveBordersCheckbox->setCheckState(event.settings.preserveBorders() ? Qt::Checked : Qt::Unchecked);
+    };
+    this->_settings->add_listener(CMTSettings::SETTINGS_UPDATE_EVENT, &this->settingsUpdateEventHandler);
+}
+
+CMTSettingsEditor::~CMTSettingsEditor() {
+    this->_settings->remove_listener(CMTSettings::SETTINGS_UPDATE_EVENT, &this->settingsUpdateEventHandler);
 }
