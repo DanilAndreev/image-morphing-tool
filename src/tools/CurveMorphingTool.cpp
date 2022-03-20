@@ -16,13 +16,16 @@
 
 #include "tools/CurveMorphingTool.h"
 
+#include <QApplication>
+#include <QLayout>
 #include <QPainter>
 #include <QPushButton>
-#include <QLayout>
-#include <QApplication>
+#include <iostream>
+#include <QMessageBox>
 
 #include "core/Stroke/StrokeDrawer.h"
 #include "core/Stroke/StrokeManager.h"
+
 
 CurveMorphingTool::CurveMorphingTool() noexcept : ToolViewportEvents(), displayDirections(false) {}
 
@@ -33,11 +36,27 @@ void CurveMorphingTool::initialize(Application *application) {
     this->_application = application;
     this->backend.initialize();//TODO: get status;
 
-    auto* button1 = new QPushButton{};
-    button1->setText("mode");
+    this->_shadersEditor = new ShadersEditor{};
+    this->_shadersEditor->setApplyChangesCallback([this](QString shaderText){
+        QMessageBox message{};
+        message.setText(shaderText);
+        message.exec();
+    });
+    this->_shadersEditor->resize(800, 600);
 
-    QLayout* layout = this->_application->getMainWindow().getToolBar()->layout();
-    layout->addWidget(button1);
+    ToolBar *toolbar = this->_application->getMainWindow().getToolBar();
+    auto *button1 = new QPushButton{};
+    button1->setText("mode");
+//    button1->connect(button1, SIGNAL(released()), toolbar, []() {
+//                         if (this->_shadersEditor->isVisible()) {
+//                             this->_shadersEditor->close();
+//                         } else {
+//                             this->_shadersEditor->show();
+//                         }
+//                     });
+
+    toolbar->layout()->addWidget(button1);
+    this->_shadersEditor->show();
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {

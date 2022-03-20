@@ -50,7 +50,6 @@ public:
     void loadFileOnPath(const std::string &filename);
     void loadFile(std::istream &stream);
     void loadFile(const std::string &shaderText);
-
 public:
     std::vector<std::uint32_t> getSPIRVfromGLSL(EShLanguage stage);
 };

@@ -30,12 +30,13 @@
 #include "core/history/Memento.h"
 
 #include "CMTVulkanBackend.h"
+#include "tools/gui/ShadersEditor.h"
+
 
 struct CurveMorphingToolMemento : public Memento {
     Stroke strokeFrom;
     Stroke strokeTo;
 };
-
 
 class CurveMorphingTool : public ToolViewportEvents, public ToolSnapshotEvents, public ToolCanvasEvents {
 public:
@@ -43,6 +44,8 @@ public:
     Stroke strokeFrom;
     Stroke strokeTo;
     Application* _application;
+protected:
+    ShadersEditor * _shadersEditor = nullptr;
 public:
     std::vector<QPoint> currentStroke;
 public:

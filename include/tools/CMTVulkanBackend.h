@@ -21,12 +21,13 @@
 #include <vulkan/vulkan.h>
 #include "core/drawables/Image.h"
 #include "core/Stroke/Stroke.h"
+#include "ShaderManager.h"
 
 class CMTVulkanBackend {
 protected:
     struct ShaderModules {
-        VkShaderModule vertexShader = VK_NULL_HANDLE;
-        VkShaderModule fragmentShader = VK_NULL_HANDLE;
+        ShaderManager* vertexShader = nullptr;
+        ShaderManager* fragmentShader = nullptr;
     };
 
 protected:

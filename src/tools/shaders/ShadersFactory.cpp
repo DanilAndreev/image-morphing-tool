@@ -15,13 +15,15 @@
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
 #include "tools/shaders/ShadersFactory.h"
+#include "StandAlone/DirStackFileIncluder.h"
 #include <fstream>
 
-#include "SPIRV/GlslangToSpv.h"
-#include "SPIRV/Logger.h"
-#include "SPIRV/SpvTools.h"
-#include "StandAlone/DirStackFileIncluder.h"
-#include "glslang_c_interface.h"
+#include <SPIRV/GlslangToSpv.h>
+#include <SPIRV/Logger.h>
+#include <SPIRV/SpvTools.h>
+#include <glslang/Include/ShHandle.h>
+#include <glslang/Include/ResourceLimits.h>
+#include <glslang/MachineIndependent/Versions.h>
 
 void ShadersFactory::loadFileOnPath(const std::string &filename) {
     std::ifstream stream{filename};
@@ -38,12 +40,6 @@ void ShadersFactory::loadFile(std::istream &stream) {
 void ShadersFactory::loadFile(const std::string &shaderText) {
     this->shaderCode = shaderText;
 }
-
-#include <glslang/Include/ShHandle.h>
-
-#include <glslang/Include/ResourceLimits.h>
-#include <glslang/MachineIndependent/Versions.h>
-#include <iostream>
 
 const TBuiltInResource DefaultTBuiltInResource = {
         /* .MaxLights = */ 32,

@@ -1,2 +1,2 @@
-#include "include\image_morphing_tool.frag.h"
-#include "include\image_morphing_tool.vert.h"
+#include "include\SPIRV\image_morphing_tool.frag.spv.h"
+#include "include\SPIRV\image_morphing_tool.vert.spv.h"
