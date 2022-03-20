@@ -49,23 +49,13 @@ void CurveMorphingTool::initialize(Application *application) {
     this->settingsUpdateEventHandler = [this](events::event_base& bEvent){
         auto& event = dynamic_cast<CMTSettings::SettingsUpdateEvent&>(bEvent);
         if (event.settings.hotEditEnabled()) {
-            auto* memento = dynamic_cast<DocumentMemento*>(this->_application->history().last().at("document"));
-            if (!memento) return;
-            Image picture = Image{memento->image};
-            this->executeMorphing(&picture);
-            this->_application->document()->image() = picture;
-            this->_application->document()->redraw();
+            this->hotRepaint();
         }
     };
     this->shadersUpdateEventHandler = [this](events::event_base& bEvent){
         auto& event = dynamic_cast<ShaderManager::ShaderUpdateEvent&>(bEvent);
         if (event.valid) {
-            auto* memento = dynamic_cast<DocumentMemento*>(this->_application->history().last().at("document"));
-            if (!memento) return;
-            Image picture = Image{memento->image};
-            this->executeMorphing(&picture);
-            this->_application->document()->image() = picture;
-            this->_application->document()->redraw();
+            this->hotRepaint();
         }
     };
     this->settings.add_listener(CMTSettings::SETTINGS_UPDATE_EVENT, &this->settingsUpdateEventHandler);
@@ -157,6 +147,7 @@ void CurveMorphingTool::mouseReleaseEventHandler(VMouseEvent &event) {
             this->strokeTo = stroke;
         }
         this->currentStroke.clear();
+        this->hotRepaint(false);
         event.queueRepaint();
     }
 }
@@ -191,8 +182,8 @@ void CurveMorphingTool::keyPressEventHandler(VKeyEvent &event) {
 bool CurveMorphingTool::executeMorphing(Image* targetImage) noexcept {
     bool retVal;
     this->processLock.lock();
-    if (!targetImage)
-        targetImage = &this->_application->document()->image();
+    if (!targetImage) targetImage = &this->_application->document()->image();
+
     if (this->backend.shaders.vertexShader->isValid() && this->backend.shaders.fragmentShader->isValid()) {
         this->backend.execute(*targetImage, this->strokeFrom, this->strokeTo);
         retVal = true;
@@ -214,4 +205,14 @@ bool CurveMorphingTool::executeMorphing(Image* targetImage) noexcept {
     }
     this->processLock.unlock();
     return retVal;
+}
+void CurveMorphingTool::hotRepaint(bool queueRepaint) noexcept {
+    auto* memento = dynamic_cast<DocumentMemento*>(this->_application->history().last().at("document"));
+    if (!memento) return;
+    Image picture = Image{memento->image};
+    if (this->executeMorphing(&picture)) {
+        this->_application->document()->image() = picture;
+        if (queueRepaint)
+            this->_application->document()->redraw();
+    }
 }

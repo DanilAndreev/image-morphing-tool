@@ -47,6 +47,13 @@ MainWindow::MainWindow(Application *application, QWidget *parent) noexcept: QMai
     this->_topInnerDock = new QBoxLayout{QBoxLayout::Direction::TopToBottom};
     this->_bottomInnerDock = new QBoxLayout{QBoxLayout::Direction::TopToBottom};
 
+    this->_topOuterDock->setSpacing(0);
+    this->_bottomOuterDock->setSpacing(0);
+    this->_leftOuterDock->setSpacing(0);
+    this->_rightOuterDock->setSpacing(0);
+    this->_topInnerDock->setSpacing(0);
+    this->_bottomInnerDock->setSpacing(0);
+
     QBoxLayout* outerVerticalLayout = new QBoxLayout{QBoxLayout::Direction::TopToBottom};
     outerVerticalLayout->addLayout(this->_topOuterDock);
     QBoxLayout* outerHorizontalLayout = new QBoxLayout{QBoxLayout::Direction::LeftToRight};

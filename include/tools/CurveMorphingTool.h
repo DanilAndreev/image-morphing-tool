@@ -76,6 +76,7 @@ public:
     void uninitialize(Application* application) noexcept override;
 protected:
     bool executeMorphing(Image* targetImage = nullptr) noexcept;
+    void hotRepaint(bool queueRepaint = true) noexcept;
 };
 
 
