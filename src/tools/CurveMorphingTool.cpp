@@ -54,7 +54,7 @@ void CurveMorphingTool::initialize(Application *application) {
     };
     this->shadersUpdateEventHandler = [this](events::event_base& bEvent){
         auto& event = dynamic_cast<ShaderManager::ShaderUpdateEvent&>(bEvent);
-        if (event.valid) {
+        if (event.valid && this->settings.hotEditEnabled()) {
             this->hotRepaint();
         }
     };
@@ -124,7 +124,7 @@ void CurveMorphingTool::canvasPaintEventHandler(CPaintEvent &event) {
 
 void CurveMorphingTool::mouseMoveEventHandler(VMouseEvent &event) {
     if (event.buttons().testFlag(Qt::MouseButton::LeftButton)) {
-        this->currentStroke.push_back(event.pos());
+        this->currentStroke.push_back(event.pos() + event.scroll());
         event.queueRepaint();
     }
 }
@@ -147,7 +147,8 @@ void CurveMorphingTool::mouseReleaseEventHandler(VMouseEvent &event) {
             this->strokeTo = stroke;
         }
         this->currentStroke.clear();
-        this->hotRepaint(false);
+        if (this->settings.hotEditEnabled())
+            this->hotRepaint(false);
         event.queueRepaint();
     }
 }
@@ -207,7 +208,9 @@ bool CurveMorphingTool::executeMorphing(Image* targetImage) noexcept {
     return retVal;
 }
 void CurveMorphingTool::hotRepaint(bool queueRepaint) noexcept {
-    auto* memento = dynamic_cast<DocumentMemento*>(this->_application->history().last().at("document"));
+    const Snapshot* snapshot = this->_application->history().last();
+    if (!snapshot) return;
+    auto* memento = dynamic_cast<DocumentMemento*>(snapshot->at("document"));
     if (!memento) return;
     Image picture = Image{memento->image};
     if (this->executeMorphing(&picture)) {

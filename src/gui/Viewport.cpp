@@ -18,6 +18,7 @@
 
 #include <QPaintEngine>
 #include <QVariant>
+#include <QScrollBar>
 
 #include "core/Stroke/StrokeDrawer.h"
 #include "core/Stroke/StrokeManager.h"
