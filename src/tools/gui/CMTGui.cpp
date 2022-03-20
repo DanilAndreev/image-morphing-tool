@@ -19,7 +19,7 @@
 
 CMTGui::CMTGui(CurveMorphingTool *tool, QWidget *parent): QPushButton(parent), _tool(tool) {
     this->setText("aaa");
-    this->_cmtSettings = new CMTSettingsEditor(tool);
+    this->_cmtSettings = new CMTSettingsEditor(&tool->settings);
     this->_vertexShaderEditor = new ShadersEditor{tool->backend.shaders.vertexShader, "Vertex shader"};
     this->_fragmentShaderEditor = new ShadersEditor{tool->backend.shaders.fragmentShader, "Fragment shader"};
     this->_vertexShaderEditor->resize(800, 600);

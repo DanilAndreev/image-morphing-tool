@@ -31,6 +31,7 @@
 
 #include "CMTVulkanBackend.h"
 #include "tools/gui/ShadersEditor.h"
+#include "CMTSettings.h"
 
 class CMTGui;
 
@@ -45,6 +46,7 @@ public:
     std::mutex processLock;
     Stroke strokeFrom;
     Stroke strokeTo;
+    CMTSettings settings;
     Application* _application;
 protected:
     CMTGui* _gui;
