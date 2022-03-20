@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+set(QMAKE_FLAGS "-static -static-libgcc -static-libstdc++")
 
 set(CMAKE_PREFIX_PATH $ENV{QT6_DIR})
 
