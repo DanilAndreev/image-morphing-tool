@@ -17,23 +17,27 @@
 #ifndef IMAGE_MORPHING_TOOL_CMTGUI_H
 #define IMAGE_MORPHING_TOOL_CMTGUI_H
 
-#include <QWidget>
-#include <QPushButton>
-#include <QMenu>
+#include "tools/gui/CMTSettingsEditor.h"
 #include "tools/gui/ShadersEditor.h"
+#include <QMenu>
+#include <QPushButton>
+#include <QWidget>
 
 class CurveMorphingTool;
 
-class CMTGui: public QPushButton {
+class CMTGui : public QPushButton {
     Q_OBJECT
 protected:
-    CurveMorphingTool* _tool;
+    CurveMorphingTool *_tool;
+
 protected:
-    ShadersEditor * _vertexShaderEditor = nullptr;
-    ShadersEditor * _fragmentShaderEditor = nullptr;
-    QMenu* _menu;
+    ShadersEditor *_vertexShaderEditor = nullptr;
+    ShadersEditor *_fragmentShaderEditor = nullptr;
+    CMTSettingsEditor *_cmtSettings = nullptr;
+    QMenu *_menu;
+
 public:
-    CMTGui(CurveMorphingTool* tool, QWidget* parent);
+    CMTGui(CurveMorphingTool *tool, QWidget *parent);
 signals:
     void rightClicked();
 private slots:
