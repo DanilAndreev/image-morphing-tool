@@ -17,25 +17,37 @@
 #ifndef IMAGE_MORPHING_TOOL_VEVENT_H
 #define IMAGE_MORPHING_TOOL_VEVENT_H
 
-#include "event_emitter.h"
 #include "../gui/Viewport.h"
+#include "event_emitter.h"
+#include <QPoint>
+#include <QScrollBar>
 
 class VEvent : public events::event_base {
 protected:
-    Viewport* _origin = nullptr;
+    Viewport *_origin = nullptr;
+    QPoint _scroll{};
     bool _repaintQueued = false;
+
 public:
-    explicit VEvent(Viewport* origin) noexcept: events::event_base(), _origin(origin) {}
-    VEvent(const VEvent& reference) noexcept: events::event_base(reference), _origin(reference._origin) {}
+    explicit VEvent(Viewport *origin) noexcept : events::event_base(),
+                                                 _origin(origin),
+                                                 _scroll(origin->horizontalScrollBar()->value(),
+                                                         origin->verticalScrollBar()->value()) {}
+    VEvent(const VEvent &reference) noexcept : events::event_base(reference),
+                                               _origin(reference._origin),
+                                               _scroll(reference._scroll) {}
     ~VEvent() override = default;
+
 public:
-    Viewport* origin() noexcept { return this->_origin; }
+    Viewport *origin() noexcept { return this->_origin; }
+    const QPoint &scroll() const noexcept { return this->_scroll; }
+
 public:
-    void queueRepaint() noexcept {this->_repaintQueued = true; }
-    [[nodiscard]] const bool& repaintQueued() const noexcept {
+    void queueRepaint() noexcept { this->_repaintQueued = true; }
+    [[nodiscard]] const bool &repaintQueued() const noexcept {
         return this->_repaintQueued;
     }
 };
 
 
-#endif //IMAGE_MORPHING_TOOL_VEVENT_H
+#endif//IMAGE_MORPHING_TOOL_VEVENT_H

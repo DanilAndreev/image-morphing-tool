@@ -17,6 +17,7 @@
 #include "GLSLShaders.h"
 #include "tools/CMTVulkanBackend.h"
 #include "tools/shaders/ShadersFactory.h"
+#include "tools/CMTSettings.h"
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <renderdoc_app.h>
@@ -31,7 +32,9 @@ namespace ShaderDataStructs {
     using uint = std::uint32_t;
 
     struct MorphingSettings {
-        uint strokeElementsCount;
+        uint strokeElementsCount = 0;
+        float toolMagnitude = 0.1;
+        uint preserveBorders = static_cast<uint>(false);
     };
 
     struct VertexData {
@@ -407,7 +410,9 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
                                  this->allocator, &this->framebuffer);
     if (status != VK_SUCCESS) return status;
 
-    status = this->createPSO(image);
+    status = this->createPSO(image, VK_POLYGON_MODE_FILL, &this->pipelinePolygonal);
+    if (status != VK_SUCCESS) return status;
+    status = this->createPSO(image, VK_POLYGON_MODE_LINE, &this->pipelineWireframe);
     if (status != VK_SUCCESS) return status;
 
     VkCommandBufferBeginInfo commandBufferBeginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
@@ -415,7 +420,11 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     commandBufferBeginInfo.pInheritanceInfo = nullptr;
     status = vkBeginCommandBuffer(this->commandBuffer, &commandBufferBeginInfo);
     if (status != VK_SUCCESS) return status;
-    vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline);
+    if (this->cmtSettings->wireframe()) {
+        vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineWireframe);
+    } else {
+        vkCmdBindPipeline(this->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelinePolygonal);
+    }
 
     status = this->uploadResources(image);
     if (status != VK_SUCCESS) return status;
@@ -433,6 +442,10 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
 
     ShaderDataStructs::MorphingSettings morphingSettings{};
     morphingSettings.strokeElementsCount = fromStroke.size();
+    if (this->cmtSettings) {
+        morphingSettings.toolMagnitude = this->cmtSettings->toolMagnitude();
+        morphingSettings.preserveBorders = this->cmtSettings->preserveBorders();
+    }
     vkCmdPushConstants(this->commandBuffer, this->pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataStructs::MorphingSettings),
                        &morphingSettings);
@@ -785,7 +798,7 @@ std::uint32_t CMTVulkanBackend::findMemoryType(const VkMemoryRequirements &memor
 
     return selectedType;
 }
-VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
+VkResult CMTVulkanBackend::createPSO(const Image &image, VkPolygonMode polyMode, VkPipeline* target) noexcept {
     VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2];
     shaderStageCreateInfo[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
     shaderStageCreateInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -839,7 +852,7 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
     VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
     rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
-    rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizationStateCreateInfo.polygonMode = polyMode;
     rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_FRONT_BIT;
     rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizationStateCreateInfo.depthBiasClamp = VK_FALSE;
@@ -924,7 +937,7 @@ VkResult CMTVulkanBackend::createPSO(const Image &image) noexcept {
                                      1,
                                      &pipelineCreateInfo,
                                      this->allocator,
-                                     &this->pipeline);
+                                     target);
 }
 
 VkResult CMTVulkanBackend::uploadResources(const Image &image) noexcept {

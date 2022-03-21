@@ -16,15 +16,15 @@
 
 #include "core/drawables/Image.h"
 
-Image::Image() noexcept: QImage(), events::event_emitter() {}
+Image::Image() noexcept: QImage(QSize{}, QImage::Format::Format_RGBA8888), events::event_emitter() {}
 
-Image::Image(const QSize &size, QImage::Format format) : QImage(size, format), events::event_emitter() {}
+Image::Image(const QSize &size) : QImage(size, QImage::Format::Format_RGBA8888), events::event_emitter() {}
 
-Image::Image(int width, int height, QImage::Format format) : QImage(width, height, format), events::event_emitter() {}
+Image::Image(int width, int height) : QImage(width, height, QImage::Format::Format_RGBA8888), events::event_emitter() {}
 
 Image::Image(const QString &fileName, const char *format) : QImage(fileName, format), events::event_emitter() {}
 
 Image::Image(const Image &reference): QImage(reference), events::event_emitter() {}
 
 Image::~Image() {}
-Image::Image(const QImage &reference) : QImage(reference) {}
+Image::Image(const QImage &reference) : QImage(reference.convertToFormat(QImage::Format::Format_RGBA8888)) {}

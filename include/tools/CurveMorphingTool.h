@@ -31,6 +31,7 @@
 
 #include "CMTVulkanBackend.h"
 #include "tools/gui/ShadersEditor.h"
+#include "CMTSettings.h"
 
 class CMTGui;
 
@@ -45,7 +46,10 @@ public:
     std::mutex processLock;
     Stroke strokeFrom;
     Stroke strokeTo;
+    CMTSettings settings;
     Application* _application;
+    events::event_emitter::event_handler_t settingsUpdateEventHandler;
+    events::event_emitter::event_handler_t shadersUpdateEventHandler;
 protected:
     CMTGui* _gui;
 public:
@@ -70,6 +74,9 @@ public:
 public:
     void initialize(Application* application) override;
     void uninitialize(Application* application) noexcept override;
+protected:
+    bool executeMorphing(Image* targetImage = nullptr) noexcept;
+    void hotRepaint(bool queueRepaint = true) noexcept;
 };
 
 

@@ -23,8 +23,8 @@
 class Image : public QImage, public events::event_emitter {
 public:
     Image() noexcept;
-    Image(const QSize &size, Format format);
-    Image(int width, int height, Format format);
+    Image(const QSize &size);
+    Image(int width, int height);
     explicit Image(const QString &fileName, const char *format = nullptr);
     explicit Image(const QImage& reference);
     Image(const Image &reference);

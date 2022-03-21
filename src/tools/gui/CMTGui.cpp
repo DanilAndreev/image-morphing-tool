@@ -14,15 +14,16 @@
 //
 // Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 
-//
-// Created by onepl on 3/20/2022.
-//
-
 #include "tools/gui/CMTGui.h"
 #include "tools/CurveMorphingTool.h"
 
 CMTGui::CMTGui(CurveMorphingTool *tool, QWidget *parent): QPushButton(parent), _tool(tool) {
     this->setText("aaa");
+//    this->_cmtSettings = new CMTSettingsEditor(&tool->settings, tool->_application->getMainWindow().getViewport());
+    this->_cmtSettings = new CMTSettingsEditor(&tool->settings);
+    this->_cmtSettings->hide();
+//    tool->_application->getMainWindow().rightOuterDock().addWidget(this->_cmtSettings);
+
     this->_vertexShaderEditor = new ShadersEditor{tool->backend.shaders.vertexShader, "Vertex shader"};
     this->_fragmentShaderEditor = new ShadersEditor{tool->backend.shaders.fragmentShader, "Fragment shader"};
     this->_vertexShaderEditor->resize(800, 600);
@@ -60,7 +61,7 @@ void CMTGui::mousePressEvent(QMouseEvent *e) {
 }
 
 void CMTGui::morphingSettingsEditActionSlot() {
-
+    this->_cmtSettings->show();
 }
 
 void CMTGui::vertexShaderEditActionSlot() {

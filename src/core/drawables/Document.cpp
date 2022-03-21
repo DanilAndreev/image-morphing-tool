@@ -26,9 +26,7 @@ const char *Document::LOAD_EVENT = "load";
 const char *Document::UNLOAD_EVENT = "close";
 
 Document::Document() {
-    QImage img{R"(C:\Projects\image-morphing-tool\cmake-build-debug-mingw-qt6\images\tiger.png)"};
-    this->_image = new Image(img.convertToFormat(QImage::Format::Format_RGBA8888));
-    assert(!this->_image->isNull());
+    this->_image = new Image{100, 100};
 }
 
 Document::Document(const Document &reference) {
