@@ -15,9 +15,11 @@
 #  Author: Danil Andreev | danssg08@gmail.com | https://github.com/DanilAndreev
 import os
 import subprocess
+import sys
 from zipfile import ZipFile
 import shutil
 from os import path
+import argparse
 
 
 def assemble_release_dir(release_binary_dir: str, cmake_build_dir: str, qt_binary_dir: str):
@@ -28,9 +30,13 @@ def assemble_release_dir(release_binary_dir: str, cmake_build_dir: str, qt_binar
     os.makedirs(release_binary_dir)
 
     executable_path = path.join(cmake_build_dir, executable_name)
-    shutil.copy(executable_path, release_binary_dir)
+    if path.abspath(executable_path) != path.abspath(release_binary_dir):
+        shutil.copy(executable_path, release_binary_dir)
 
     process = subprocess.Popen([path.join(qt_binary_dir, "windeployqt.exe"),
+                                "--no-system-d3d-compiler",
+                                "--no-opengl-sw",
+                                "--force",
                                 "--release",
                                 "--dir", release_binary_dir,
                                 path.join(release_binary_dir, executable_name)],
@@ -43,27 +49,51 @@ def assemble_release_dir(release_binary_dir: str, cmake_build_dir: str, qt_binar
         raise RuntimeError(f"STDERR:\n{error.decode()}"
                            f"STDOUT:\n{output.decode()}")
 
-    shutil.copy(path.join(qt_binary_dir, "libgcc_s_seh-1.dll"), release_binary_dir)
-    shutil.copy(path.join(qt_binary_dir, "libstdc++-6.dll"), release_binary_dir)
-    shutil.copy(path.join(qt_binary_dir, "libwinpthread-1.dll"), release_binary_dir)
+    if not path.exists(path.join(release_binary_dir, "libgcc_s_seh-1.dll")):
+        shutil.copy(path.join(qt_binary_dir, "libgcc_s_seh-1.dll"), release_binary_dir)
+    if not path.exists(path.join(release_binary_dir, "libstdc++-6.dll")):
+        shutil.copy(path.join(qt_binary_dir, "libstdc++-6.dll"), release_binary_dir)
+    if not path.exists(path.join(release_binary_dir, "libwinpthread-1.dll")):
+        shutil.copy(path.join(qt_binary_dir, "libwinpthread-1.dll"), release_binary_dir)
 
 
-
-def post_build():
-    release_binary_dir: str = path.abspath(path.join(path.dirname(__file__), "..", "release"))
-    cmake_build_dir = path.join("C:\\", "Projects", "image-morphing-tool", "cmake-build-release-mingw-qt6")
-    qbd = path.join("C:\\", "Qt", "6.2.3", "mingw_64", "bin")
-    assemble_release_dir(path.join(release_binary_dir, "bin"), cmake_build_dir, qbd)
-
+def assemble_package(release_binary_dir: str, packed_out_dir: str):
     print("Assembling ZIP")
-    with ZipFile(path.join(release_binary_dir, "release.zip"), "w") as zip_obj:
-        for folder_name, subfolders, filenames in os.walk(path.join(release_binary_dir, "bin")):
+    os.makedirs(packed_out_dir, exist_ok=True)
+    archive_filename: str = "release.zip"
+    with ZipFile(path.join(packed_out_dir, archive_filename), "w") as zip_obj:
+        for folder_name, subfolders, filenames in os.walk(path.join(release_binary_dir)):
             for filename in filenames:
+                if filename == archive_filename:
+                    continue
                 source_filepath = os.path.join(folder_name, filename)
-                dest_filepath = os.path.join(folder_name.replace(path.join(release_binary_dir, "bin"), "")[1:], filename)
+                dest_filepath = os.path.join(folder_name.replace(packed_out_dir, "")[1:], filename)
                 zip_obj.write(source_filepath, dest_filepath)
                 print(f"Processed: '{source_filepath}' -> '{dest_filepath}'")
 
 
 if __name__ == "__main__":
-    post_build()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-qbd", "--qt6-binary-dir", type=str, required=True,
+                        help="Path to QT6 binary directory. Example: .../Qt/6.2.3/mingw_64/bin")
+    parser.add_argument("-cbd", "--cmake-build-dir", type=str, required=True,
+                        help="Path to CMake project build directory.")
+    parser.add_argument("-od", "--out-dir", type=str,
+                        default=path.abspath(path.join(path.dirname(__file__), "..", "release")),
+                        help="Path to output directory.")
+    parser.add_argument("--no-pack", type=bool, default=False,
+                        help="Path to output directory.")
+    parser.add_argument("-o", "--out-packed-dir", type=str,
+                        default=None,
+                        help="Path to output directory for packed archive.")
+    try:
+        args = parser.parse_args()
+        assemble_release_dir(release_binary_dir=args.out_dir,
+                             cmake_build_dir=args.cmake_build_dir,
+                             qt_binary_dir=args.qt6_binary_dir)
+        if not args.no_pack:
+            args.out_packed_dir = args.out_packed_dir if args.out_packed_dir is not None else args.out_dir
+            assemble_package(args.out_dir, args.out_packed_dir)
+    except Exception as e:
+        print("Fatal error: " + str(e), file=sys.stderr)
+        exit(-1)

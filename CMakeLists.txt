@@ -1,13 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
 project(image-morphing-tool)
 
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(QMAKE_FLAGS "-static -static-libgcc -static-libstdc++")
 
-set(CMAKE_PREFIX_PATH $ENV{QT6_DIR})
+#set(CMAKE_PREFIX_PATH $ENV{QT6_DIR}/lib/cmake)
+set(CMAKE_PREFIX_PATH ${QT6_DIR}/lib/cmake)
 
 function(loadQt6DllsIntoTarget target)
     if (WIN32)
@@ -94,8 +96,6 @@ include_directories(${PROJECT_SOURCE_DIR}/libs/event_emitter/include)
 include_directories(${PROJECT_SOURCE_DIR}/libs/render_doc/include)
 
 # -------------------------------------------------- Copy GLSL shaders sources
-#file(COPY ${PROJECT_SOURCE_DIR}/shaders DESTINATION ${PROJECT_BINARY_DIR})
-#file(COPY ${PROJECT_SOURCE_DIR}/style DESTINATION ${PROJECT_BINARY_DIR})
 configure_file("${PROJECT_SOURCE_DIR}/style/style.qss" "${PROJECT_BINARY_DIR}/style/style.qss" COPYONLY)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -110,5 +110,13 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 add_custom_target(imt_pre_build
         COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/building/pre_build.py
         USES_TERMINAL)
+add_custom_target(imt_post_build
+        COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/building/post_build.py
+        --qt6-binary-dir "${QT6_DIR}/bin"
+        --cmake-build-dir "${CMAKE_BINARY_DIR}"
+        --out-dir "${CMAKE_BINARY_DIR}/qt_build_deployment"
+        --out-packed-dir "${CMAKE_SOURCE_DIR}/release"
+        USES_TERMINAL)
 add_dependencies(${PROJECT_NAME} imt_pre_build)
+add_dependencies(imt_post_build ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PRIVATE src/tools/shaders/bin)
