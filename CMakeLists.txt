@@ -116,6 +116,7 @@ add_custom_target(imt_post_build
         --cmake-build-dir "${CMAKE_BINARY_DIR}"
         --out-dir "${CMAKE_BINARY_DIR}/qt_build_deployment"
         --out-packed-dir "${CMAKE_SOURCE_DIR}/release"
+        --package-name "CurveMorphingTool"
         USES_TERMINAL)
 add_dependencies(${PROJECT_NAME} imt_pre_build)
 add_dependencies(imt_post_build ${PROJECT_NAME})

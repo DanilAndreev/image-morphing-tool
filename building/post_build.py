@@ -20,6 +20,7 @@ from zipfile import ZipFile
 import shutil
 from os import path
 import argparse
+from datetime import datetime
 
 
 def assemble_release_dir(release_binary_dir: str, cmake_build_dir: str, qt_binary_dir: str):
@@ -57,10 +58,14 @@ def assemble_release_dir(release_binary_dir: str, cmake_build_dir: str, qt_binar
         shutil.copy(path.join(qt_binary_dir, "libwinpthread-1.dll"), release_binary_dir)
 
 
-def assemble_package(release_binary_dir: str, packed_out_dir: str):
+def assemble_package(release_binary_dir: str,
+                     packed_out_dir: str,
+                     package_name: str = "release",
+                     no_timestamp: bool = False):
     print("Assembling ZIP")
     os.makedirs(packed_out_dir, exist_ok=True)
-    archive_filename: str = "release.zip"
+    timestamp = datetime.today().strftime(".%Y.%m.%d.%H%M%S")
+    archive_filename: str = package_name + (timestamp if no_timestamp is False else "") + ".zip"
     with ZipFile(path.join(packed_out_dir, archive_filename), "w") as zip_obj:
         for folder_name, subfolders, filenames in os.walk(path.join(release_binary_dir)):
             for filename in filenames:
@@ -86,6 +91,10 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--out-packed-dir", type=str,
                         default=None,
                         help="Path to output directory for packed archive.")
+    parser.add_argument("--package-name", type=str, default="CurveMorphingTool",
+                        help="Packed archive name.")
+    parser.add_argument("--no-timestamp", type=bool, default=False,
+                        help="Disable timestamp in name of packed archive.")
     try:
         args = parser.parse_args()
         assemble_release_dir(release_binary_dir=args.out_dir,
@@ -93,7 +102,10 @@ if __name__ == "__main__":
                              qt_binary_dir=args.qt6_binary_dir)
         if not args.no_pack:
             args.out_packed_dir = args.out_packed_dir if args.out_packed_dir is not None else args.out_dir
-            assemble_package(args.out_dir, args.out_packed_dir)
+            assemble_package(release_binary_dir=args.out_dir,
+                             packed_out_dir=args.out_packed_dir,
+                             package_name=args.package_name,
+                             no_timestamp=args.no_timestamp)
     except Exception as e:
         print("Fatal error: " + str(e), file=sys.stderr)
         exit(-1)
