@@ -57,8 +57,10 @@ void main() {
         if (isAffected) shift /= float(affectedCount);
     }
     vec2 position = uvToVertexSpace(vPosition + shift);
+    float shiftLength = length(shift);
+    float zShift = isAffected && shiftLength > 0 ? shiftLength / morphingSettings.toolMagnitude : 0.0f;
 
-    gl_Position = vec4(position, isAffected ? 1.0f : 0.0f, 1.0f);
+    gl_Position = vec4(position, 1 - clamp(zShift, 0.0f, 1.0f), 1.0f);
     oDepth = gl_Position.z;
     oTexCoord = vPosition;
 }

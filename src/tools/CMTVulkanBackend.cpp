@@ -460,7 +460,7 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
 
     VkClearValue depthClearValue{};
     depthClearValue.depthStencil = {};
-    depthClearValue.depthStencil.depth = 1.0f;
+    depthClearValue.depthStencil.depth = 0.0f;
     depthClearValue.depthStencil.stencil = 0;
 
     VkClearValue clearValues[] = {colorClearValue, depthClearValue};
@@ -738,7 +738,8 @@ VkResult CMTVulkanBackend::allocateResources(const Image &image, const Stroke &s
     if (status != VK_SUCCESS) return status;
     this->setDebugName(this->loadReadBuffer, "loadReadBuffer");
 
-    this->generateGrid(40, 40);//TODO: load resolution.
+    this->generateGrid(200, 200);//TODO: load resolution.
+//    this->generateGrid(image.width(), image.height());//TODO: load resolution.
     return VK_SUCCESS;
 }
 
@@ -835,7 +836,7 @@ VkResult CMTVulkanBackend::createPSO(const Image &image, VkPolygonMode polyMode,
     viewport.y = 0.0f;
     viewport.width = static_cast<float>(image.width());
     viewport.height = static_cast<float>(image.height());
-    viewport.minDepth = 1000.0f;
+    viewport.minDepth = 1.0f;
 
 
     VkRect2D scissor{};
@@ -888,11 +889,11 @@ VkResult CMTVulkanBackend::createPSO(const Image &image, VkPolygonMode polyMode,
     VkPipelineDepthStencilStateCreateInfo ds{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
     ds.depthTestEnable = VK_TRUE;
     ds.depthWriteEnable = VK_TRUE;
-    ds.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    ds.depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
     ds.depthBoundsTestEnable = VK_FALSE;
     ds.stencilTestEnable = VK_FALSE;
     ds.minDepthBounds = 0.0f;
-    ds.maxDepthBounds = 0.0f;
+    ds.maxDepthBounds = 1.0f;
     ds.front = {};
     ds.back = {};
 

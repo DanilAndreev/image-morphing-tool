@@ -9,8 +9,5 @@ layout(set = 0, binding = 2) uniform sampler2D targetImage;
 
 void main() {
     fragColor = texture(targetImage, iTexCoord);
-//    float originalZ = gl_FragCoord.z / gl_FragCoord.w;
-//    fragColor.xyz = vec3(originalZ);
-//    fragColor.a = 1.0f;
-//    gl_FragDepth = iDepth;
+//    fragColor = vec4(iDepth,  0.0f, 0.0f, 1.0f);
 }
