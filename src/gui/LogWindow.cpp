@@ -32,6 +32,9 @@ LogWindow::LogWindow(Application *application, QWidget *parent) : QWidget(parent
     this->eventLogCallback = [this](events::event_base &event) {
         this->handleLogEvent(dynamic_cast<LogEvent &>(event));
     };
+    this->setWindowIcon(QIcon{"icons/TerminalIcon.png"});
+    this->setWindowTitle("Console");
+
     this->_application->add_listener(Application::LOG_EVENT, &this->eventLogCallback);
     QBoxLayout *layout = new QBoxLayout(QBoxLayout::Direction::TopToBottom);
 

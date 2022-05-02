@@ -31,7 +31,8 @@ BottomLineWidget::BottomLineWidget(Application* application, QWidget *parent) : 
         application->getMainWindow().getLogWindow()->show();
     });
     button->setContentsMargins({1, 1, 1, 1});
-    button->setText("terminal");
+    QIcon terminalIcon{"icons/TerminalIcon.png"};
+    button->setIcon(terminalIcon);
 
     layout->setAlignment(Qt::AlignRight);
     this->setMaximumHeight(40);

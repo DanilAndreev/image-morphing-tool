@@ -21,9 +21,9 @@ CMTGui::CMTGui(CurveMorphingTool *tool, QWidget *parent): QPushButton(parent), _
     QIcon icon{"icons/CMTIcon.png"};
     this->setIcon(icon);
 //    this->_cmtSettings = new CMTSettingsEditor(&tool->settings, tool->_application->getMainWindow().getViewport());
-    this->_cmtSettings = new CMTSettingsEditor(&tool->settings);
+    this->_cmtSettings = new CMTSettingsEditor(&tool->settings, &tool->_application->getMainWindow());
+    tool->_application->getMainWindow().bottomInnerDock().addWidget(this->_cmtSettings);
     this->_cmtSettings->hide();
-//    tool->_application->getMainWindow().rightOuterDock().addWidget(this->_cmtSettings);
 
     this->_vertexShaderEditor = new ShadersEditor{tool->backend.shaders.vertexShader, "Vertex shader"};
     this->_fragmentShaderEditor = new ShadersEditor{tool->backend.shaders.fragmentShader, "Fragment shader"};
@@ -64,13 +64,20 @@ void CMTGui::mousePressEvent(QMouseEvent *e) {
 }
 
 void CMTGui::morphingSettingsEditActionSlot() {
-    this->_cmtSettings->show();
+    if (this->_cmtSettings->isHidden()) {
+        this->_cmtSettings->show();
+        this->_cmtSettings->activateWindow();
+    } else {
+        this->_cmtSettings->hide();
+    }
 }
 
 void CMTGui::vertexShaderEditActionSlot() {
     this->_vertexShaderEditor->show();
+    this->_vertexShaderEditor->activateWindow();
 }
 
 void CMTGui::fragmentShaderEditActionSlot() {
     this->_fragmentShaderEditor->show();
+    this->_fragmentShaderEditor->activateWindow();
 }
