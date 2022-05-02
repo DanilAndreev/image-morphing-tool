@@ -20,7 +20,10 @@
 #include "tools/CMTSettings.h"
 #include <cstdint>
 #include <glm/glm.hpp>
+
+#ifdef IMT_DEBUG
 #include <renderdoc_app.h>
+#endif // IMT_DEBUG
 
 #include <QtGui>
 #include <libloaderapi.h>
@@ -214,35 +217,6 @@ VkResult CMTVulkanBackend::initializeShaderModules() noexcept {
     if (!this->shaders.vertexShader->isValid() || !this->shaders.fragmentShader->isValid())
         return VK_ERROR_INITIALIZATION_FAILED;
     return VK_SUCCESS;
-
-    //    using ShaderWord_t = uint32_t;
-    //    VkResult status;
-    //    ShadersFactory shadersFactory{};
-    //    shadersFactory.loadFileOnPath("image_morphing_tool.vert");
-    //    std::vector<ShaderWord_t> spirv = shadersFactory.getSPIRVfromGLSL(EShLangVertex);
-    //    status = createShaderModule(this->device, allocator,
-    //                                spirv.data(),
-    //                                spirv.size() * sizeof(ShaderWord_t),
-    //                                &this->shaders.vertexShader);
-    //    if (status != VK_SUCCESS) return status;
-    //    shadersFactory.loadFileOnPath("image_morphing_tool.frag");
-    //    spirv = shadersFactory.getSPIRVfromGLSL(EShLangFragment);
-    //    status = createShaderModule(this->device, allocator,
-    //                                spirv.data(),
-    //                                spirv.size() * sizeof(ShaderWord_t),
-    //                                &this->shaders.fragmentShader);
-    //    if (status != VK_SUCCESS) return status;
-
-
-    //    using ShaderBin_t = const uint32_t *;
-    //    status = createShaderModule(this->device, allocator,
-    //                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_vert),
-    //                                sizeof(image_morphing_tool_vert), &this->shaders.vertexShader);
-    //    if (status != VK_SUCCESS) return status;
-    //    status = createShaderModule(this->device, allocator,
-    //                                reinterpret_cast<ShaderBin_t>(image_morphing_tool_frag),
-    //                                sizeof(image_morphing_tool_frag), &this->shaders.fragmentShader);
-    // return status;
 }
 
 void CMTVulkanBackend::releaseShaderModules() noexcept {
@@ -376,16 +350,16 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     if (!this->shaders.fragmentShader->isValid() || !this->shaders.vertexShader->isValid())
         return VK_ERROR_UNKNOWN;
 
+#ifdef IMT_DEBUG
     RENDERDOC_API_1_1_2 *rdoc_api = NULL;
-
     if (HMODULE mod = GetModuleHandleA("renderdoc.dll")) {
         pRENDERDOC_GetAPI RENDERDOC_GetAPI =
                 (pRENDERDOC_GetAPI) GetProcAddress(mod, "RENDERDOC_GetAPI");
         int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void **) &rdoc_api);
         assert(ret == 1);
     }
-
     if (rdoc_api) rdoc_api->StartFrameCapture(NULL, NULL);
+#endif // IMT_DEBUG
 
     VkResult status;
     VkFenceCreateInfo fenceCreateInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
@@ -507,7 +481,9 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
 
     vkDestroyFence(this->device, jobFence, this->allocator);
 
+#ifdef IMT_DEBUG
     if (rdoc_api) rdoc_api->EndFrameCapture(NULL, NULL);
+#endif // IMT_DEBUG
     return VK_SUCCESS;
 }
 

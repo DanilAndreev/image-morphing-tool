@@ -58,6 +58,15 @@ def assemble_release_dir(release_binary_dir: str, cmake_build_dir: str, qt_binar
         shutil.copy(path.join(qt_binary_dir, "libwinpthread-1.dll"), release_binary_dir)
 
 
+def assemble_config_files(release_binary_dir: str, cmake_build_dir: str):
+    if path.exists(path.join(release_binary_dir, "style")):
+        os.rmdir(path.join(release_binary_dir, "style"))
+    shutil.copytree(path.join(cmake_build_dir, "style"), path.join(release_binary_dir, "style"))
+    if path.exists(path.join(release_binary_dir, "icons")):
+        os.rmdir(path.join(release_binary_dir, "icons"))
+    shutil.copytree(path.join(cmake_build_dir, "icons"), path.join(release_binary_dir, "icons"))
+
+
 def assemble_package(release_binary_dir: str,
                      packed_out_dir: str,
                      package_name: str = "release",
@@ -72,7 +81,7 @@ def assemble_package(release_binary_dir: str,
                 if filename == archive_filename:
                     continue
                 source_filepath = os.path.join(folder_name, filename)
-                dest_filepath = os.path.join(folder_name.replace(packed_out_dir, "")[1:], filename)
+                dest_filepath = os.path.join(folder_name.replace(release_binary_dir, "")[1:], filename)
                 zip_obj.write(source_filepath, dest_filepath)
                 print(f"Processed: '{source_filepath}' -> '{dest_filepath}'")
 
@@ -100,6 +109,8 @@ if __name__ == "__main__":
         assemble_release_dir(release_binary_dir=args.out_dir,
                              cmake_build_dir=args.cmake_build_dir,
                              qt_binary_dir=args.qt6_binary_dir)
+        assemble_config_files(release_binary_dir=args.out_dir,
+                              cmake_build_dir=args.cmake_build_dir)
         if not args.no_pack:
             args.out_packed_dir = args.out_packed_dir if args.out_packed_dir is not None else args.out_dir
             assemble_package(release_binary_dir=args.out_dir,

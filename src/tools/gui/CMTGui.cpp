@@ -18,7 +18,8 @@
 #include "tools/CurveMorphingTool.h"
 
 CMTGui::CMTGui(CurveMorphingTool *tool, QWidget *parent): QPushButton(parent), _tool(tool) {
-    this->setText("aaa");
+    QIcon icon{"icons/CMTIcon.png"};
+    this->setIcon(icon);
 //    this->_cmtSettings = new CMTSettingsEditor(&tool->settings, tool->_application->getMainWindow().getViewport());
     this->_cmtSettings = new CMTSettingsEditor(&tool->settings);
     this->_cmtSettings->hide();
@@ -36,6 +37,8 @@ CMTGui::CMTGui(CurveMorphingTool *tool, QWidget *parent): QPushButton(parent), _
     this->_menu->addAction(morphingSettingsEditAction);
     this->_menu->addAction(vertexShaderEditAction);
     this->_menu->addAction(fragmentShaderEditAction);
+
+    this->setProperty("qssClass", "ToolBarIcon");
 
     connect(this, SIGNAL(rightClicked()), this, SLOT(showMenuSlot()));
     connect(morphingSettingsEditAction, SIGNAL(triggered()), this, SLOT(morphingSettingsEditActionSlot()));

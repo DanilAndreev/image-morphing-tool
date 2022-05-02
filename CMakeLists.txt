@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
-project(image-morphing-tool)
 
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Release" FORCE)
+
+project(image-morphing-tool VERSION 1.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
@@ -121,3 +123,5 @@ add_custom_target(imt_post_build
 add_dependencies(${PROJECT_NAME} imt_pre_build)
 add_dependencies(imt_post_build ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PRIVATE src/tools/shaders/bin)
+
+file(COPY ${CMAKE_SOURCE_DIR}/style DESTINATION ${CMAKE_BINARY_DIR})

@@ -21,19 +21,11 @@
 #include <QVariant>
 
 ToolBar::ToolBar(QWidget *parent): QWidget(parent) {
-    QPushButton* button1 = new QPushButton();
-    button1->setText("push me");
-
-    QPushButton* button2 = new QPushButton();
-    button2->setText("push me");
-
     QBoxLayout* layout = new QBoxLayout(QBoxLayout::Direction::TopToBottom, this);
     layout->setAlignment(Qt::AlignTop);
-    layout->addWidget(button1);
-    layout->addWidget(button2);
     layout->setContentsMargins({1, 1, 1, 1});
     this->setLayout(layout);
 
-    this->setMaximumWidth(32);
+    this->setMaximumWidth(64);
     this->setProperty("qssClass", "ToolBar");
 }

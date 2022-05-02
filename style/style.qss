@@ -26,6 +26,12 @@
     padding: 10px 1px 1px 1px;
 }
 
+*[qssClass~="ToolBar::item"] {
+    padding: 1px 1px 1px 1px;
+    margin: 0 0 0 0;
+    border: 0;
+}
+
 *[qssClass~="Viewport"] {
     background: #fff;
 }
