@@ -60,6 +60,7 @@ public:
 
 protected:
     CMTVulkanBackend backend{};
+    bool isInitialized = false;
 public:
     CurveMorphingTool() noexcept;
     virtual ~CurveMorphingTool() = default;

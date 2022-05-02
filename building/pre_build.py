@@ -3,7 +3,7 @@ from os import path
 
 
 def run_system_command(*args: str) -> None:
-    process = Popen(args)
+    process = Popen(args, shell=True)
     process.wait()
     if process.returncode != 0:
         stdout, stderr = process.communicate()
@@ -20,7 +20,7 @@ def main():
     shaders_compile_script_path: str = path.abspath(path.join(
         path.dirname(__file__), "..", "src", "tools", "shaders", "compile.py"
     ))
-    run_system_command("python", shaders_compile_script_path)
+    run_system_command("python3", shaders_compile_script_path)
     print("Shaders have been successfully built.")
 
 

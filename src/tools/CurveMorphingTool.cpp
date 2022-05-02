@@ -37,7 +37,23 @@ void CurveMorphingTool::initialize(Application *application) {
     ToolSnapshotEvents::initialize(application);
     ToolCanvasEvents::initialize(application);
     this->_application = application;
-    this->backend.initialize();//TODO: get status;
+    VkResult status = this->backend.initialize();
+    if (status != VK_SUCCESS) {
+        QString errorText{};
+        switch (status) {
+            case VK_ERROR_INCOMPATIBLE_DRIVER:
+                errorText = "Vulkan driver is not compatible with your device.";
+                break;
+            default:
+                errorText = "Unexpected error occurred while initializing Vulkan backend.";
+        }
+        this->_application->log(errorText, LogEvent::LOG_LEVEL::ERROR);
+        QMessageBox errorMessageBox{};
+        errorMessageBox.setText(errorText);
+        return;
+    }
+
+
     this->backend.setSettings(&this->settings);
 
     this->_gui = new CMTGui{this, &application->getMainWindow()};
@@ -61,16 +77,20 @@ void CurveMorphingTool::initialize(Application *application) {
     this->settings.add_listener(CMTSettings::SETTINGS_UPDATE_EVENT, &this->settingsUpdateEventHandler);
     this->backend.shaders.fragmentShader->add_listener(ShaderManager::SHADER_UPDATE_EVENT, &this->shadersUpdateEventHandler);
     this->backend.shaders.vertexShader->add_listener(ShaderManager::SHADER_UPDATE_EVENT, &this->shadersUpdateEventHandler);
+    this->isInitialized = true;
 }
 
 void CurveMorphingTool::uninitialize(Application *application) noexcept {
-    this->backend.shaders.fragmentShader->remove_listener(ShaderManager::SHADER_UPDATE_EVENT, &this->shadersUpdateEventHandler);
-    this->backend.shaders.vertexShader->remove_listener(ShaderManager::SHADER_UPDATE_EVENT, &this->shadersUpdateEventHandler);
-    this->settings.remove_listener(CMTSettings::SETTINGS_UPDATE_EVENT, &this->settingsUpdateEventHandler);
-    this->backend.release();
-    ToolViewportEvents::uninitialize(application);
-    ToolSnapshotEvents::uninitialize(application);
-    ToolCanvasEvents::uninitialize(application);
+    if (this->isInitialized) {
+        this->backend.shaders.fragmentShader->remove_listener(ShaderManager::SHADER_UPDATE_EVENT, &this->shadersUpdateEventHandler);
+        this->backend.shaders.vertexShader->remove_listener(ShaderManager::SHADER_UPDATE_EVENT, &this->shadersUpdateEventHandler);
+        this->settings.remove_listener(CMTSettings::SETTINGS_UPDATE_EVENT, &this->settingsUpdateEventHandler);
+        this->backend.release();
+        ToolViewportEvents::uninitialize(application);
+        ToolSnapshotEvents::uninitialize(application);
+        ToolCanvasEvents::uninitialize(application);
+        this->isInitialized = false;
+    }
 }
 
 void CurveMorphingTool::canvasPaintEventHandler(CPaintEvent &event) {

@@ -26,7 +26,7 @@
 #endif // IMT_DEBUG
 
 #include <QtGui>
-#include <libloaderapi.h>
+// #include <libloaderapi.h> //TODO: figure out what is it. Maybe legacy
 
 #define ARR_ELEM_COUNT(arr) sizeof(arr) / sizeof(arr[0])
 
@@ -378,7 +378,7 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     framebufferCreateInfo.width = image.width();
     framebufferCreateInfo.height = image.height();
     framebufferCreateInfo.layers = 1;
-    framebufferCreateInfo.attachmentCount = ARRAYSIZE(framebufferAttachments);
+    framebufferCreateInfo.attachmentCount = ARR_ELEM_COUNT(framebufferAttachments);
     framebufferCreateInfo.pAttachments = framebufferAttachments;
     status = vkCreateFramebuffer(this->device, &framebufferCreateInfo,
                                  this->allocator, &this->framebuffer);
@@ -447,7 +447,7 @@ VkResult CMTVulkanBackend::execute(Image &image, const Stroke &fromStroke, const
     renderPassBeginInfo.renderArea = {0, 0,
                                       static_cast<uint32_t>(image.width()),
                                       static_cast<uint32_t>(image.height())};
-    renderPassBeginInfo.clearValueCount = ARRAYSIZE(clearValues);
+    renderPassBeginInfo.clearValueCount = ARR_ELEM_COUNT(clearValues);
     renderPassBeginInfo.pClearValues = clearValues;
 
     vkCmdBeginRenderPass(this->commandBuffer, &renderPassBeginInfo, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
