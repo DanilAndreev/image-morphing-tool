@@ -1,3 +1,5 @@
+import argparse
+import sys
 from os import environ
 import os
 from os import path
@@ -19,8 +21,11 @@ def file_to_header(source_filepath: str, header_filepath: str, variable_name: st
             header_file.write("};\n")
 
 
-def compile_shaders() -> None:
-    spirv_compiler_path: str = path.abspath(path.join(environ["VULKAN_SDK"], "Bin", "glslangValidator.exe"))
+def compile_shaders(is_mac: bool) -> None:
+    if is_mac:
+        spirv_compiler_path: str = path.abspath(path.join(environ["VULKAN_SDK"], "bin", "glslangValidator"))
+    else:
+        spirv_compiler_path: str = path.abspath(path.join(environ["VULKAN_SDK"], "Bin", "glslangValidator.exe"))
     source_directory: str = path.abspath(path.join(path.dirname(__file__), "src"))
     binary_directory: str = path.abspath(path.join(path.dirname(__file__), "bin"))
     main_header_filepath: str = path.join(binary_directory)
@@ -70,8 +75,12 @@ def compile_shaders() -> None:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-os", type=str, required=True, choices=["OSX", "Win"],
+                        help="System type.")
     try:
-        compile_shaders()
+        args = parser.parse_args()
+        compile_shaders(args.os == "OSX")
     except Exception as error:
         print("Failed to compile shaders, an error occurred: ", error)
-        exit(-1);
+        exit(-1)

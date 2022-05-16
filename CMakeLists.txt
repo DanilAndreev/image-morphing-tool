@@ -106,7 +106,9 @@ endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
 add_compile_definitions(NOMINMAX=1)
 
+if(MinGW)
 target_link_options(${PROJECT_NAME} PUBLIC -static-libgcc -static-libstdc++)
+endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 add_custom_target(imt_pre_build
