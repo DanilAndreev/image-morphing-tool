@@ -1,5 +1,6 @@
 from subprocess import Popen
 from os import path
+import platform
 
 
 def run_system_command(*args: str) -> None:
@@ -20,7 +21,13 @@ def main():
     shaders_compile_script_path: str = path.abspath(path.join(
         path.dirname(__file__), "..", "src", "tools", "shaders", "compile.py"
     ))
-    run_system_command("python3", shaders_compile_script_path)
+    if platform.system() == "Darwin":
+        run_system_command("python3", shaders_compile_script_path, "-os", "Win")
+    elif platform.system() == "Windows":
+        run_system_command("python", shaders_compile_script_path, "-os", "OSX")
+    else:
+        raise RuntimeError("Unsupported platform")
+
     print("Shaders have been successfully built.")
 
 
