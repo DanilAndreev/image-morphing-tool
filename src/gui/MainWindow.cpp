@@ -144,6 +144,25 @@ void MainWindow::buildMenu(QWidget* parent) {
         }
     });
 
+    QAction *exportImageAction = new QAction("&Export Image", this);
+    connect(exportImageAction, &QAction::triggered, qApp, [this, parent]() {
+        QString filename = QFileDialog::getSaveFileName(parent,
+                                                        tr("Open image"),
+                                                        "/images",
+                                                        tr("PNG (*.png)"));
+        if (filename.isNull()) return;
+        try {
+            QImage img = this->application->document()->image();
+            img.save(filename);
+            this->application->log(QString{"Successfully exported image: "} + filename, LogEvent::LOG_LEVEL::INFO);
+        } catch (Exceptions::FileIOError& error) {
+            this->application->log(QString{"Failed to export image: "} + filename, LogEvent::LOG_LEVEL::ERROR);
+            QMessageBox msgBox;
+            msgBox.setText("Failed to export image.");
+            msgBox.exec();
+        }
+    });
+
     QAction *redoAction = new QAction("&Redo", this);
     redoAction->setShortcut(tr("CTRL+SHIFT+Z"));
     connect(redoAction, &QAction::triggered, qApp, [this]() {
@@ -158,6 +177,7 @@ void MainWindow::buildMenu(QWidget* parent) {
     QMenu *fileMenu = this->menuBar()->addMenu("&File");
     fileMenu->setProperty("qssClass", "MenuList MainWindowFileMenu");
     fileMenu->addAction(loadImageAction);
+    fileMenu->addAction(exportImageAction);
     fileMenu->addAction(undoAction);
     fileMenu->addAction(redoAction);
     fileMenu->addAction(quitAction);
