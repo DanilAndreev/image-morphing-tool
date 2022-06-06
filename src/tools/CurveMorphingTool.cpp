@@ -192,11 +192,10 @@ void CurveMorphingTool::keyPressEventHandler(VKeyEvent &event) {
             this->firstStroke = !this->firstStroke;
             break;
         case Qt::Key::Key_Enter:
+        case Qt::Key::Key_Return:
             this->_application->history().makeSnapshot();
             if (this->executeMorphing())
                 event.queueRepaint();
-        case Qt::Key::Key_Return:
-            break;
     }
 }
 
